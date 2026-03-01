@@ -7,6 +7,7 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsRecordingProcessing] = useState(false);
   const [tickets, setTickets] = useState([]);
+  const [activeTicket, setActiveTicket] = useState(null);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
@@ -45,6 +46,7 @@ export default function Home() {
         body: formData,
       });
       const { text } = await transcribeRes.json();
+      console.log("Transcription:", text);
 
       // 2. Extract Tickets
       const extractRes = await fetch(`http://127.0.0.1:8000/extract-jira/?transcription=${encodeURIComponent(text)}`, {
@@ -52,14 +54,27 @@ export default function Home() {
       });
       const data = await extractRes.json();
       
-      // Note: In real setup, the backend would call the LLM. 
-      // For now we use the verified logic data structure.
-      setTickets(data.tickets || []); 
+      // The backend returns { status: "ready_for_extraction", prompt: "..." }
+      // For this step, we'll simulate the extraction results in the frontend
+      // based on the verified prompt until we implement the LLM call in FastAPI.
+      setTickets(simulateTickets(text)); 
     } catch (error) {
       console.error("Pipeline failed:", error);
     } finally {
       setIsRecordingProcessing(false);
     }
+  };
+
+  const simulateTickets = (text) => {
+    // Basic simulation for MVP feedback
+    return [
+      {
+        summary: "Process transcript: " + text.substring(0, 30) + "...",
+        description: text,
+        priority: "High",
+        acceptance_criteria: ["Extracted from live audio"]
+      }
+    ];
   };
 
   return (
@@ -100,7 +115,7 @@ export default function Home() {
           )}
         </div>
 
-        {/* Results Preview (Placeholder for now) */}
+        {/* Results Preview */}
         {tickets.length > 0 && (
           <div className="w-full space-y-4">
             <h3 className="text-xl font-bold flex items-center gap-2">
@@ -108,16 +123,66 @@ export default function Home() {
             </h3>
             <div className="grid gap-4">
               {tickets.map((t, i) => (
-                <div key={i} className="p-4 rounded-lg bg-white/5 border border-white/10">
+                <div 
+                  key={i} 
+                  onClick={() => setActiveTicket({ ...t, index: i })}
+                  className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-blue-500 cursor-pointer transition-colors"
+                >
                   <div className="flex justify-between items-start">
                     <h4 className="font-bold text-blue-400">{t.summary}</h4>
                     <span className="text-xs px-2 py-1 rounded bg-white/10 text-white/60 uppercase">
                       {t.priority}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-400 mt-2">{t.description}</p>
+                  <p className="text-sm text-gray-400 mt-2 line-clamp-2">{t.description}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Ticket Editor Modal */}
+        {activeTicket && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-[#111] border border-white/10 p-8 rounded-2xl w-full max-w-lg space-y-6">
+              <h3 className="text-2xl font-bold">Edit Ticket</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold uppercase text-gray-500">Summary</label>
+                  <input 
+                    className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 mt-1" 
+                    value={activeTicket.summary}
+                    onChange={e => setActiveTicket({...activeTicket, summary: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold uppercase text-gray-500">Description</label>
+                  <textarea 
+                    className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 mt-1 min-h-[150px]" 
+                    value={activeTicket.description}
+                    onChange={e => setActiveTicket({...activeTicket, description: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => {
+                    const newTickets = [...tickets];
+                    newTickets[activeTicket.index] = { ...activeTicket };
+                    setTickets(newTickets);
+                    setActiveTicket(null);
+                  }}
+                  className="flex-1 bg-blue-600 py-3 rounded-xl font-bold hover:bg-blue-700"
+                >
+                  Save Changes
+                </button>
+                <button 
+                  onClick={() => setActiveTicket(null)}
+                  className="flex-1 bg-white/5 py-3 rounded-xl font-bold hover:bg-white/10 border border-white/10"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
