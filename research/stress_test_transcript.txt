@@ -1,0 +1,7 @@
+# VoiceTicket Stress Test Transcript - 2026-03-01
+
+"Alright, so for VoiceTicket, we need to make sure the landing page looks sharp. Let's add a blue gradient to the hero background. Also, I noticed the Whisper transcription sometimes drops the last word, we need to fix that buffer logic in the backend. 
+
+On the Jira side, we need an endpoint that actually AUTHENTICATES with the Jira API, not just returns local JSON. Can you add an Oauth2 flow for that? And for the tickets themselves, make sure the acceptance criteria are always formatted as a bulleted list. 
+
+Oh, and we totally forgot a 'Delete Recording' button on the frontend. People will want that. We also need to logo—maybe a stylized microphone that looks like a ticket? Let's get a placeholder for that in the public folder."
