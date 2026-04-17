@@ -1,195 +1,232 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Mic, Square, Loader2, ListChecks } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import Sidebar from "./components/Sidebar";
+import DashboardView from "./components/DashboardView";
+import CaptureView from "./components/CaptureView";
+import ProcessingView from "./components/ProcessingView";
+import BlueprintView from "./components/BlueprintView";
+import JiraSyncModal from "./components/JiraSyncModal";
+
+const SESSIONS_KEY = 'voiceticket_sessions';
+
+const loadSessions = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SESSIONS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+const saveSessions = (sessions) => {
+  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)); } catch {}
+};
 
 export default function Home() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsRecordingProcessing] = useState(false);
+  const [view, setView] = useState('dashboard');
+  const [showSyncModal, setShowSyncModal] = useState(false);
   const [tickets, setTickets] = useState([]);
-  const [activeTicket, setActiveTicket] = useState(null);
+  const [sessions, setSessions] = useState([]);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const recordingStartRef = useRef(null);
+  const recordingDurationRef = useRef(0);
+
+  // Load sessions from localStorage on mount
+  useEffect(() => {
+    setSessions(loadSessions());
+  }, []);
 
   const startRecording = async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorderRef.current = new MediaRecorder(stream);
-    audioChunksRef.current = [];
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("Your browser does not support audio recording, or you are not on a secure connection (HTTPS/localhost).");
+        return false;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
 
-    mediaRecorderRef.current.ondataavailable = (event) => {
-      audioChunksRef.current.push(event.data);
-    };
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
 
-    mediaRecorderRef.current.onstop = async () => {
-      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
-      await uploadAndProcess(audioBlob);
-    };
+      mediaRecorderRef.current.onstop = async () => {
+        recordingDurationRef.current = Date.now() - (recordingStartRef.current || Date.now());
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+        setView('processing');
+        await processAudio(audioBlob);
+      };
 
-    mediaRecorderRef.current.start();
-    setIsRecording(true);
+      mediaRecorderRef.current.start();
+      recordingStartRef.current = Date.now();
+      return true;
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        alert("Microphone access was denied. Please click the lock/site-info icon in your browser's address bar, allow microphone access, and reload the page.");
+      } else if (err.name === 'NotFoundError') {
+        alert("No microphone was found. Please connect a microphone and try again.");
+      } else {
+        alert("Could not access the microphone: " + err.message);
+      }
+      return false;
+    }
   };
 
   const stopRecording = () => {
-    mediaRecorderRef.current.stop();
-    setIsRecording(false);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
   };
 
-  const uploadAndProcess = async (blob) => {
-    setIsRecordingProcessing(true);
+  const processAudio = async (blob) => {
     try {
       const formData = new FormData();
       formData.append("file", blob, "recording.wav");
 
       // 1. Transcribe
-      const transcribeRes = await fetch("http://127.0.0.1:8000/transcribe/", {
+      console.log("[VoiceTicket] Sending audio to /api/transcribe...");
+      const transcribeRes = await fetch("/api/transcribe", {
         method: "POST",
         body: formData,
       });
-      const { text } = await transcribeRes.json();
-      console.log("Transcription:", text);
+      
+      if (!transcribeRes.ok) {
+        console.error("[VoiceTicket] Transcription failed:", transcribeRes.status);
+        setTickets(getFallbackTickets("Transcription service unavailable."));
+        return;
+      }
 
-      // 2. Extract Tickets
-      const extractRes = await fetch(`http://127.0.0.1:8000/extract-jira/?transcription=${encodeURIComponent(text)}`, {
+      const transcribeData = await transcribeRes.json();
+      const text = transcribeData.text;
+      console.log("[VoiceTicket] Transcription:", text);
+
+      if (!text || text.trim().length === 0) {
+        console.warn("[VoiceTicket] Empty transcription received.");
+        setTickets(getFallbackTickets("No speech detected in recording."));
+        return;
+      }
+      
+      // 2. Extract Tickets via LLM
+      console.log("[VoiceTicket] Sending transcription to /api/extract-jira...");
+      const extractRes = await fetch(`/api/extract-jira?transcription=${encodeURIComponent(text)}`, {
         method: "POST",
       });
-      const data = await extractRes.json();
       
-      // The backend returns { status: "ready_for_extraction", prompt: "..." }
-      // For this step, we'll simulate the extraction results in the frontend
-      // based on the verified prompt until we implement the LLM call in FastAPI.
-      setTickets(simulateTickets(text)); 
+      if (!extractRes.ok) {
+        console.error("[VoiceTicket] Extraction failed:", extractRes.status);
+        setTickets(getFallbackTickets(text));
+        return;
+      }
+
+      const extractData = await extractRes.json();
+      console.log("[VoiceTicket] Extraction response:", extractData);
+
+      let finalTickets;
+      if (extractData.status === "success" && Array.isArray(extractData.tickets) && extractData.tickets.length > 0) {
+        console.log("[VoiceTicket] Using real extracted tickets:", extractData.tickets.length, "items");
+        finalTickets = extractData.tickets;
+      } else {
+        console.warn("[VoiceTicket] Extraction returned no tickets, using transcription as single ticket.");
+        finalTickets = getFallbackTickets(text);
+      }
+      setTickets(finalTickets);
+      saveSession(finalTickets, text);
     } catch (error) {
-      console.error("Pipeline failed:", error);
-    } finally {
-      setIsRecordingProcessing(false);
+      console.error("[VoiceTicket] Pipeline error:", error);
+      setTickets(getFallbackTickets("Processing failed. Is the backend running?"));
     }
   };
 
-  const simulateTickets = (text) => {
-    // Basic simulation for MVP feedback
+  // Only used when backend is unreachable or returns no data
+  const getFallbackTickets = (text) => {
     return [
       {
-        summary: "Process transcript: " + text.substring(0, 30) + "...",
+        type: "Story",
+        summary: "Voice Capture Result",
         description: text,
-        priority: "High",
-        acceptance_criteria: ["Extracted from live audio"]
+        priority: "Medium",
+        acceptance_criteria: [],
+        subtasks: []
       }
     ];
   };
 
+  const saveSession = useCallback((finalTickets, transcription) => {
+    const totalTickets = finalTickets.reduce((acc, t) => acc + 1 + (t.subtasks ? t.subtasks.length : 0), 0);
+    const durationMs = recordingDurationRef.current || 0;
+    const firstSummary = finalTickets[0]?.summary || 'Voice Session';
+
+    const session = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      title: firstSummary,
+      timestamp: new Date().toISOString(),
+      durationMs,
+      ticketCount: totalTickets,
+      tickets: finalTickets,
+      transcription: transcription || '',
+    };
+
+    setSessions(prev => {
+      const updated = [session, ...prev].slice(0, 50); // keep last 50
+      saveSessions(updated);
+      return updated;
+    });
+  }, []);
+
+  const handleProcessingComplete = () => {
+    setView('blueprint');
+  };
+
+  const handleSync = () => {
+    setShowSyncModal(true);
+  };
+
+  const handleReturn = () => {
+    setShowSyncModal(false);
+    setView('dashboard');
+    setTickets([]);
+  };
+
+  const handleOpenSession = (session) => {
+    setTickets(session.tickets);
+    setView('blueprint');
+  };
+
+  const handleClearSessions = () => {
+    setSessions([]);
+    saveSessions([]);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start max-w-4xl px-4 w-full">
-        {/* Hero Section */}
-        <div className="space-y-4 text-center sm:text-left">
-          <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl">
-            Voice<span className="text-blue-500">Ticket</span>
-          </h1>
-          <h2 className="text-2xl font-bold text-gray-200">Speed to Backlog</h2>
-          <p className="text-lg text-gray-400">
-            Instantly convert audio feedback into structured Jira tasks.
-          </p>
-        </div>
+    <div className="flex bg-background-dark min-h-screen text-slate-100 font-body antialiased overflow-hidden selection:bg-primary/30 selection:text-primary">
+      {/* Decorative Background */}
+      <div className="bg-noise-overlay"></div>
 
-        {/* Recorder Component */}
-        <div className="flex flex-col gap-4 items-center sm:items-start w-full bg-white/5 p-8 rounded-2xl border border-white/10">
-          {!isRecording ? (
-            <button
-              onClick={startRecording}
-              disabled={isProcessing}
-              className="group rounded-full bg-blue-600 text-white flex items-center gap-3 px-8 py-4 hover:bg-blue-700 transition-all disabled:opacity-50"
-            >
-              {isProcessing ? <Loader2 className="animate-spin" /> : <Mic size={24} />}
-              <span className="font-bold text-lg">
-                {isProcessing ? "Processing Audio..." : "Start Recording"}
-              </span>
-            </button>
-          ) : (
-            <button
-              onClick={stopRecording}
-              className="group rounded-full bg-red-600 text-white flex items-center gap-3 px-8 py-4 hover:bg-red-700 animate-pulse"
-            >
-              <Square size={24} fill="currentColor" />
-              <span className="font-bold text-lg">Stop and Process</span>
-            </button>
-          )}
-        </div>
+      {view !== 'blueprint' && view !== 'capture' && view !== 'processing' && (
+        <Sidebar setView={setView} />
+      )}
 
-        {/* Results Preview */}
-        {tickets.length > 0 && (
-          <div className="w-full space-y-4">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <ListChecks className="text-blue-500" /> Extracted Tickets
-            </h3>
-            <div className="grid gap-4">
-              {tickets.map((t, i) => (
-                <div 
-                  key={i} 
-                  onClick={() => setActiveTicket({ ...t, index: i })}
-                  className="p-4 rounded-lg bg-white/5 border border-white/10 hover:border-blue-500 cursor-pointer transition-colors"
-                >
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-blue-400">{t.summary}</h4>
-                    <span className="text-xs px-2 py-1 rounded bg-white/10 text-white/60 uppercase">
-                      {t.priority}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-400 mt-2 line-clamp-2">{t.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+      {view === 'dashboard' && <DashboardView onStartCapture={() => setView('capture')} sessions={sessions} onOpenSession={handleOpenSession} onClearSessions={handleClearSessions} />}
+      {view === 'capture' && <CaptureView onStartCapture={startRecording} onStopCapture={stopRecording} />}
+      {view === 'processing' && <ProcessingView onComplete={handleProcessingComplete} />}
+      
+      {view === 'blueprint' && (
+        <BlueprintView 
+          tickets={tickets} 
+          setTickets={setTickets} 
+          onSync={handleSync}
+          onCancel={() => setView('dashboard')}
+        />
+      )}
 
-        {/* Ticket Editor Modal */}
-        {activeTicket && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-[#111] border border-white/10 p-8 rounded-2xl w-full max-w-lg space-y-6">
-              <h3 className="text-2xl font-bold">Edit Ticket</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold uppercase text-gray-500">Summary</label>
-                  <input 
-                    className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 mt-1" 
-                    value={activeTicket.summary}
-                    onChange={e => setActiveTicket({...activeTicket, summary: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-bold uppercase text-gray-500">Description</label>
-                  <textarea 
-                    className="w-full bg-white/5 border border-white/10 rounded px-4 py-2 mt-1 min-h-[150px]" 
-                    value={activeTicket.description}
-                    onChange={e => setActiveTicket({...activeTicket, description: e.target.value})}
-                  />
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <button 
-                  onClick={() => {
-                    const newTickets = [...tickets];
-                    newTickets[activeTicket.index] = { ...activeTicket };
-                    setTickets(newTickets);
-                    setActiveTicket(null);
-                  }}
-                  className="flex-1 bg-blue-600 py-3 rounded-xl font-bold hover:bg-blue-700"
-                >
-                  Save Changes
-                </button>
-                <button 
-                  onClick={() => setActiveTicket(null)}
-                  className="flex-1 bg-white/5 py-3 rounded-xl font-bold hover:bg-white/10 border border-white/10"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center text-sm text-gray-500">
-        <p>© 2026 VoiceTicket AI. Built for speed.</p>
-      </footer>
+      {showSyncModal && (
+        <JiraSyncModal 
+          count={tickets.reduce((acc, current) => acc + 1 + (current.subtasks ? current.subtasks.length : 0), 0)} 
+          onReturn={handleReturn} 
+        />
+      )}
     </div>
   );
 }

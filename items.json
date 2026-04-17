@@ -1,0 +1,82 @@
+[
+  {
+    "accessCount": 2,
+    "category": "mission",
+    "fact": "VoiceTicket mission is to eliminate the administrative tax on human creativity.",
+    "id": "vt-001",
+    "lastAccessed": "2026-03-21",
+    "source": "SOUL.md",
+    "status": "active",
+    "timestamp": "2026-03-08"
+  },
+  {
+    "accessCount": 2,
+    "category": "goal",
+    "fact": "Project goal is $1,000 revenue by March 27, 2026.",
+    "id": "vt-002",
+    "lastAccessed": "2026-03-21",
+    "source": "SOUL.md",
+    "status": "active",
+    "timestamp": "2026-03-08"
+  },
+  {
+    "accessCount": 2,
+    "category": "stack",
+    "fact": "MVP uses Next.js, FastAPI, and Whisper.",
+    "id": "vt-003",
+    "lastAccessed": "2026-03-21",
+    "source": "HEARTBEAT.md",
+    "status": "active",
+    "timestamp": "2026-03-08"
+  },
+  {
+    "accessCount": 1,
+    "category": "meta",
+    "fact": "AvA's corporate identity is ava@mactucketventures.com.",
+    "id": "vt-004",
+    "lastAccessed": "2026-03-08",
+    "source": "Google Integration",
+    "status": "active",
+    "timestamp": "2026-03-08"
+  },
+  {
+    "accessCount": 1,
+    "category": "status",
+    "fact": "VoiceTicket technical MVP (Next.js/FastAPI/Whisper) is complete and verified at mactuc/voiceticket.",
+    "id": "vt-005",
+    "lastAccessed": "2026-03-21",
+    "source": "memory/2026-03-21.md",
+    "status": "active",
+    "timestamp": "2026-03-21"
+  },
+  {
+    "accessCount": 1,
+    "category": "decision",
+    "fact": "Priority #1 shifted to Stripe/Revenue integration to test willingness to pay, over further feature development.",
+    "id": "vt-006",
+    "lastAccessed": "2026-03-21",
+    "source": "memory/2026-03-21.md",
+    "status": "active",
+    "timestamp": "2026-03-21"
+  },
+  {
+    "accessCount": 1,
+    "category": "strategy",
+    "fact": "Phase shift from 'Building' to 'Measure & Learn' officially triggered.",
+    "id": "vt-007",
+    "lastAccessed": "2026-03-21",
+    "source": "memory/2026-03-21.md",
+    "status": "active",
+    "timestamp": "2026-03-21"
+  },
+  {
+    "accessCount": 1,
+    "category": "market",
+    "fact": "RaaS (Research-as-a-Service) and 'Living Memos' identified as high-value lead magnets.",
+    "id": "vt-008",
+    "lastAccessed": "2026-03-21",
+    "source": "memory/2026-03-21.md",
+    "status": "active",
+    "timestamp": "2026-03-21"
+  }
+]

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VoiceTicket - Capture Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;family=JetBrains+Mono:wght@400&amp;family=Space+Grotesk:wght@400;600;700&amp;family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#44e47e",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#112117",
+                        "surface": "rgba(68, 228, 126, 0.05)",
+                        "surface-hover": "rgba(68, 228, 126, 0.15)",
+                        "record": "#ef4444",
+                        "muted": "rgba(68, 228, 126, 0.6)",
+                        "text-main": "#f1f5f9",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "Space Grotesk", "sans-serif"],
+                        "body": ["DM Sans", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "8px",
+                        "md": "12px",
+                        "lg": "16px",
+                        "pill": "100px",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'neon-mint': '0 0 40px rgba(68, 228, 126, 0.15)',
+                        'inner-edge': 'inset 0 1px 0 rgba(255,255,255,0.05)',
+                    },
+                    animation: {
+                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'waveform': 'waveform 1.2s ease-in-out infinite alternate',
+                        'fade-in-up': 'fadeInUp 0.5s ease-out forwards',
+                    },
+                    keyframes: {
+                        'pulse-glow': {
+                            '0%, 100%': { opacity: 1, transform: 'scale(1)' },
+                            '50%': { opacity: .7, transform: 'scale(1.05)' },
+                        },
+                        'waveform': {
+                            '0%': { height: '8px' },
+                            '100%': { height: '64px' },
+                        },
+                        'fadeInUp': {
+                            '0%': { opacity: 0, transform: 'translateY(10px)' },
+                            '100%': { opacity: 1, transform: 'translateY(0)' },
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #112117;
+            background-image: radial-gradient(circle at 50% 50%, rgba(68, 228, 126, 0.03) 0%, transparent 100%);
+        }
+        
+        .glass-panel {
+            background: rgba(68, 228, 126, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(68, 228, 126, 0.1);
+        }
+
+        .waveform-bar {
+            width: 8px;
+            background-color: #44e47e;
+            border-radius: 9999px;
+            animation: waveform 1s ease-in-out infinite alternate;
+            box-shadow: 0 0 10px rgba(68, 228, 126, 0.4);
+        }
+        
+        .waveform-bar:nth-child(1) { animation-delay: 0.1s; }
+        .waveform-bar:nth-child(2) { animation-delay: 0.4s; }
+        .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+        .waveform-bar:nth-child(4) { animation-delay: 0.7s; }
+        .waveform-bar:nth-child(5) { animation-delay: 0.3s; }
+        .waveform-bar:nth-child(6) { animation-delay: 0.8s; }
+        .waveform-bar:nth-child(7) { animation-delay: 0.5s; }
+        .waveform-bar:nth-child(8) { animation-delay: 0.1s; }
+        .waveform-bar:nth-child(9) { animation-delay: 0.6s; }
+        .waveform-bar:nth-child(10) { animation-delay: 0.2s; }
+        .waveform-bar:nth-child(11) { animation-delay: 0.9s; }
+        .waveform-bar:nth-child(12) { animation-delay: 0.4s; }
+        .waveform-bar:nth-child(13) { animation-delay: 0.7s; }
+        .waveform-bar:nth-child(14) { animation-delay: 0.3s; }
+        .waveform-bar:nth-child(15) { animation-delay: 0.8s; }
+        .waveform-bar:nth-child(16) { animation-delay: 0.1s; }
+        
+        .transcript-line {
+            opacity: 0;
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .transcript-line:nth-child(1) { animation-delay: 0s; }
+        .transcript-line:nth-child(2) { animation-delay: 1.5s; }
+        .transcript-line:nth-child(3) { animation-delay: 3s; }
+        
+        .btn-press:active {
+            transform: scale(0.95);
+        }
+
+        .mask-gradient {
+            mask-image: linear-gradient(to bottom, transparent, black 40%);
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-100 font-display min-h-screen flex flex-col items-center justify-center overflow-hidden antialiased selection:bg-primary/30 selection:text-primary">
+<div class="absolute top-8 left-8 flex items-center gap-2 text-primary/70">
+<span class="material-symbols-outlined text-xl">mic_external_on</span>
+<span class="font-display font-semibold tracking-wide uppercase text-sm">Capture Studio</span>
+</div>
+<!-- Main Capture Area -->
+<main class="w-full max-w-3xl px-6 flex flex-col items-center justify-center relative z-10 gap-12">
+<!-- Header / Status -->
+<div class="flex flex-col items-center gap-3">
+<div class="flex items-center gap-3 px-4 py-1.5 rounded-full glass-panel border border-primary/20">
+<div class="w-2.5 h-2.5 rounded-full bg-record animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></div>
+<span class="font-display font-bold text-[10px] tracking-widest text-record uppercase">Recording Active</span>
+</div>
+<div class="font-mono text-6xl font-light tracking-tight text-white drop-shadow-[0_0_15px_rgba(68,228,126,0.2)]">
+                01:24<span class="text-primary/30">.3</span>
+</div>
+</div>
+<!-- Waveform Visualizer -->
+<div class="relative w-full max-w-[450px] h-36 flex items-center justify-center">
+<!-- Glow background -->
+<div class="absolute inset-0 bg-primary/5 blur-[60px] rounded-full mix-blend-screen pointer-events-none"></div>
+<div class="flex items-center justify-center gap-2 h-full w-full shadow-neon-mint rounded-full px-8 glass-panel border border-primary/20">
+<div class="waveform-bar h-4"></div>
+<div class="waveform-bar h-12"></div>
+<div class="waveform-bar h-8"></div>
+<div class="waveform-bar h-16"></div>
+<div class="waveform-bar h-10"></div>
+<div class="waveform-bar h-20"></div>
+<div class="waveform-bar h-14"></div>
+<div class="waveform-bar h-24"></div>
+<div class="waveform-bar h-12"></div>
+<div class="waveform-bar h-18"></div>
+<div class="waveform-bar h-8"></div>
+<div class="waveform-bar h-16"></div>
+<div class="waveform-bar h-6"></div>
+<div class="waveform-bar h-10"></div>
+<div class="waveform-bar h-4"></div>
+<div class="waveform-bar h-8"></div>
+</div>
+</div>
+<!-- Live Transcript Window -->
+<div class="w-full max-w-2xl h-48 relative overflow-hidden flex flex-col justify-end pb-8 mask-gradient">
+<div class="absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-background-dark to-transparent z-10 pointer-events-none"></div>
+<div class="flex flex-col gap-3 font-display text-xl md:text-2xl leading-relaxed text-center px-4">
+<p class="transcript-line text-primary/30">
+                    Let's create a new Epic for the User Authentication overhaul.
+                </p>
+<p class="transcript-line text-primary/60">
+                    We need a story for social login via Google and GitHub.
+                </p>
+<p class="transcript-line text-white font-medium drop-shadow-md">
+                    Make sure to include a subtask for updating the database schema to handle...<span class="inline-block w-2 h-5 bg-primary ml-1 animate-pulse"></span>
+</p>
+</div>
+</div>
+</main>
+<!-- Controls -->
+<div class="fixed bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-6 z-20 glass-panel p-3 rounded-pill border border-primary/20 shadow-2xl">
+<!-- Pause Button -->
+<button aria-label="Pause Recording" class="w-12 h-12 rounded-full glass-panel text-primary flex items-center justify-center hover:bg-primary/20 transition-colors btn-press">
+<span class="material-symbols-outlined text-2xl">pause</span>
+</button>
+<!-- Stop Button -->
+<div class="relative group">
+<div class="absolute inset-0 bg-primary/40 rounded-full blur-xl group-hover:bg-primary/60 transition-all duration-500"></div>
+<button aria-label="Stop Recording" class="relative w-16 h-16 rounded-full bg-primary text-background-dark flex items-center justify-center hover:scale-105 transition-all shadow-[0_0_30px_rgba(68,228,126,0.4)] btn-press">
+<span class="material-symbols-outlined text-3xl font-bold">square</span>
+</button>
+</div>
+<!-- Settings/Menu Button -->
+<button aria-label="Input Settings" class="w-12 h-12 rounded-full glass-panel text-primary/60 hover:text-primary flex items-center justify-center hover:bg-primary/20 transition-colors btn-press">
+<span class="material-symbols-outlined text-xl">settings_voice</span>
+</button>
+</div>
+<!-- Quick Footer/Shortcuts -->
+<div class="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4 text-[10px] font-bold text-primary/40 uppercase tracking-widest pointer-events-none">
+<span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded border border-primary/20 glass-panel">Space</kbd> Pause</span>
+<span class="flex items-center gap-1"><kbd class="px-1.5 py-0.5 rounded border border-primary/20 glass-panel">Enter</kbd> Stop</span>
+</div>
+</body></html>

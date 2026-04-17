@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VoiceTicket - Ticket Blueprint</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#44e47e",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#112117",
+                        "surface": "rgba(68, 228, 126, 0.05)",
+                        "surface-hover": "rgba(68, 228, 126, 0.1)",
+                        "text-main": "#F1F5F9",
+                        "text-muted": "#8AA494",
+                        "epic": "#44e47e",
+                        "story": "#44e47e",
+                        "task": "#44e47e",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "md": "0.75rem", "lg": "1rem", "full": "9999px" },
+                    boxShadow: {
+                        'glow-primary': '0 0 20px rgba(68, 228, 126, 0.2)',
+                        'glow-active': '0 0 12px rgba(68, 228, 126, 0.3)',
+                        'inner-border': 'inset 0 1px 0 rgba(255,255,255,0.05)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #112117;
+            color: #F1F5F9;
+        }
+        
+        .glass-panel {
+            background: rgba(68, 228, 126, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(68, 228, 126, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(68, 228, 126, 0.15);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #112117;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(68, 228, 126, 0.2);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(68, 228, 126, 0.4);
+        }
+
+        /* Tree Lines */
+        .tree-line-v {
+            position: absolute;
+            left: 23px;
+            top: 40px;
+            bottom: -16px;
+            width: 1px;
+            background: linear-gradient(to bottom, rgba(68, 228, 126, 0.3), rgba(68, 228, 126, 0.1));
+            z-index: 0;
+        }
+        .tree-line-h {
+            position: absolute;
+            left: -20px;
+            top: 24px;
+            width: 20px;
+            height: 1px;
+            background-color: rgba(68, 228, 126, 0.3);
+            z-index: 0;
+        }
+        .last-child > .tree-line-v {
+            display: none;
+        }
+        
+        .rich-text-content [contenteditable]:empty:before {
+            content: attr(placeholder);
+            color: #8AA494;
+            pointer-events: none;
+            display: block;
+        }
+    </style>
+</head>
+<body class="font-display h-screen flex flex-col overflow-hidden selection:bg-primary/30 selection:text-primary">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-primary/20 bg-background-dark/80 backdrop-blur-md px-6 py-4 shrink-0 z-10 glass-panel">
+<div class="flex items-center gap-3 text-text-main">
+<div class="size-6 text-primary drop-shadow-[0_0_8px_rgba(68,228,126,0.5)]">
+<span class="material-symbols-outlined text-2xl">record_voice_over</span>
+</div>
+<h2 class="text-text-main text-xl font-bold tracking-tight">VoiceTicket</h2>
+<span class="mx-2 text-primary/20">|</span>
+<span class="text-text-muted text-sm font-medium">Ticket Blueprint</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card">
+<div class="size-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(68,228,126,0.6)]"></div>
+<span class="text-xs text-text-muted font-mono">Parsed: 1 Epic, 3 Stories, 8 Tasks</span>
+</div>
+<button class="text-text-muted hover:text-text-main transition-colors p-2 rounded-md hover:bg-primary/10">
+<span class="material-symbols-outlined text-xl">close</span>
+</button>
+</div>
+</header>
+<!-- Main Split Layout -->
+<main class="flex flex-1 overflow-hidden relative">
+<!-- Left Pane: Tree View (40%) -->
+<section class="w-[40%] min-w-[320px] max-w-[500px] border-r border-primary/10 bg-background-dark flex flex-col z-0">
+<div class="p-4 border-b border-primary/10 shrink-0 flex justify-between items-center bg-background-dark/95 z-10 sticky top-0">
+<h3 class="text-xs font-semibold text-primary uppercase tracking-wider">Hierarchy</h3>
+<div class="flex gap-2">
+<button class="p-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors" title="Expand All">
+<span class="material-symbols-outlined text-sm">unfold_more</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 pb-24 relative">
+<!-- Tree Root (Epic) -->
+<div class="relative group cursor-pointer mb-2">
+<div class="tree-line-v"></div>
+<div class="flex items-center gap-3 p-2.5 rounded-md glass-card border-primary/30 hover:border-primary/60 transition-colors relative z-10">
+<span class="material-symbols-outlined text-primary/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab text-sm absolute -left-6">drag_indicator</span>
+<div class="flex items-center justify-center size-6 rounded bg-primary/20 text-primary shrink-0">
+<span class="material-symbols-outlined text-sm">castle</span>
+</div>
+<div class="flex-1 truncate">
+<p class="text-sm font-medium text-text-main truncate">User Authentication Overhaul</p>
+<p class="text-xs text-text-muted font-mono mt-0.5">EPIC-1</p>
+</div>
+<span class="material-symbols-outlined text-text-muted text-sm">expand_more</span>
+</div>
+<!-- Level 1 (Story) -->
+<div class="pl-8 relative mt-2 group/story cursor-pointer mb-2">
+<div class="tree-line-h"></div>
+<div class="tree-line-v"></div>
+<div class="flex items-center gap-3 p-2.5 rounded-md glass-card border-l-4 border-l-primary bg-primary/10 shadow-glow-active transition-colors relative z-10">
+<span class="material-symbols-outlined text-primary/40 opacity-0 group-hover/story:opacity-100 transition-opacity cursor-grab text-sm absolute -left-6">drag_indicator</span>
+<div class="flex items-center justify-center size-5 rounded bg-primary/20 text-primary shrink-0">
+<span class="material-symbols-outlined text-xs">menu_book</span>
+</div>
+<div class="flex-1 truncate">
+<p class="text-sm font-medium text-primary truncate">Social Login Integration</p>
+</div>
+</div>
+<!-- Level 2 (Subtasks) -->
+<div class="pl-8 relative mt-2">
+<div class="tree-line-h"></div>
+<div class="tree-line-v"></div>
+<div class="flex items-center gap-3 p-2 rounded-md hover:bg-primary/10 transition-colors group/task cursor-pointer relative z-10">
+<span class="material-symbols-outlined text-primary/40 opacity-0 group-hover/task:opacity-100 transition-opacity cursor-grab text-sm absolute -left-6">drag_indicator</span>
+<div class="flex items-center justify-center size-4 rounded bg-primary/10 text-primary shrink-0">
+<span class="material-symbols-outlined text-[10px]">check_circle</span>
+</div>
+<p class="text-sm text-text-main truncate">Implement Google OAuth provider</p>
+</div>
+</div>
+<div class="pl-8 relative mt-1">
+<div class="tree-line-h"></div>
+<div class="tree-line-v"></div>
+<div class="flex items-center gap-3 p-2 rounded-md hover:bg-primary/10 transition-colors group/task cursor-pointer relative z-10">
+<span class="material-symbols-outlined text-primary/40 opacity-0 group-hover/task:opacity-100 transition-opacity cursor-grab text-sm absolute -left-6">drag_indicator</span>
+<div class="flex items-center justify-center size-4 rounded bg-primary/10 text-primary shrink-0">
+<span class="material-symbols-outlined text-[10px]">check_circle</span>
+</div>
+<p class="text-sm text-text-muted truncate">Create database schema for linked accounts</p>
+</div>
+</div>
+<div class="pl-8 relative mt-1 last-child">
+<div class="tree-line-h"></div>
+<div class="tree-line-v"></div>
+<div class="flex items-center gap-3 p-2 rounded-md hover:bg-primary/10 transition-colors group/task cursor-pointer relative z-10">
+<span class="material-symbols-outlined text-primary/40 opacity-0 group-hover/task:opacity-100 transition-opacity cursor-grab text-sm absolute -left-6">drag_indicator</span>
+<div class="flex items-center justify-center size-4 rounded bg-primary/10 text-primary shrink-0">
+<span class="material-symbols-outlined text-[10px]">check_circle</span>
+</div>
+<p class="text-sm text-text-muted truncate">UI for login buttons on Auth screen</p>
+</div>
+</div>
+</div>
+<!-- Level 1 (Story 2) -->
+<div class="pl-8 relative mt-4 group/story cursor-pointer mb-2">
+<div class="tree-line-h"></div>
+<div class="tree-line-v"></div>
+<div class="flex items-center gap-3 p-2.5 rounded-md glass-card hover:bg-primary/10 border border-primary/20 hover:border-primary/40 transition-colors relative z-10">
+<span class="material-symbols-outlined text-primary/40 opacity-0 group-hover/story:opacity-100 transition-opacity cursor-grab text-sm absolute -left-6">drag_indicator</span>
+<div class="flex items-center justify-center size-5 rounded bg-primary/20 text-primary shrink-0">
+<span class="material-symbols-outlined text-xs">menu_book</span>
+</div>
+<div class="flex-1 truncate">
+<p class="text-sm font-medium text-text-main truncate">Password Reset Flow</p>
+</div>
+<span class="material-symbols-outlined text-text-muted text-sm">chevron_right</span>
+</div>
+</div>
+<!-- Level 1 (Story 3) -->
+<div class="pl-8 relative mt-2 group/story cursor-pointer last-child">
+<div class="tree-line-h"></div>
+<div class="tree-line-v"></div>
+<div class="flex items-center gap-3 p-2.5 rounded-md glass-card hover:bg-primary/10 border border-primary/20 hover:border-primary/40 transition-colors relative z-10">
+<span class="material-symbols-outlined text-primary/40 opacity-0 group-hover/story:opacity-100 transition-opacity cursor-grab text-sm absolute -left-6">drag_indicator</span>
+<div class="flex items-center justify-center size-5 rounded bg-primary/20 text-primary shrink-0">
+<span class="material-symbols-outlined text-xs">menu_book</span>
+</div>
+<div class="flex-1 truncate">
+<p class="text-sm font-medium text-text-main truncate">Session Management &amp; Expiry</p>
+</div>
+<span class="material-symbols-outlined text-text-muted text-sm">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Detail Editor (60%) -->
+<section class="flex-1 bg-background-dark/30 flex flex-col relative z-0 glass-panel">
+<div class="p-4 border-b border-primary/10 shrink-0 flex justify-between items-center bg-background-dark/80 backdrop-blur sticky top-0 z-10">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/10 text-primary border border-primary/20">
+<span class="material-symbols-outlined text-[14px]">edit_square</span>
+<span class="text-xs font-semibold tracking-wide uppercase">Item Editor</span>
+</div>
+<span class="text-text-muted text-sm font-mono">Unsaved Changes</span>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 rounded-md text-sm font-medium text-text-muted hover:text-primary hover:bg-primary/10 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">undo</span>
+</button>
+<button class="px-3 py-1.5 rounded-md text-sm font-medium text-text-muted hover:text-red-400 hover:bg-red-400/10 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-8 pb-32">
+<div class="max-w-3xl mx-auto space-y-8">
+<!-- Title Input -->
+<div>
+<input class="w-full bg-transparent border-b border-primary/20 hover:border-primary/40 focus:border-primary focus:ring-0 px-0 py-2 text-3xl font-bold text-text-main placeholder-primary/30 transition-colors" placeholder="Ticket Title..." type="text" value="Social Login Integration"/>
+</div>
+<!-- Metadata Row -->
+<div class="flex flex-wrap gap-6 p-4 rounded-lg glass-card border-primary/10">
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-semibold text-primary uppercase tracking-wider">Parent</label>
+<div class="flex items-center gap-2 px-3 py-1.5 rounded bg-background-dark/50 border border-primary/20 cursor-pointer hover:border-primary/50 transition-colors">
+<div class="size-3 rounded bg-primary/20 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[10px]">castle</span>
+</div>
+<span class="text-sm text-text-main truncate max-w-[150px]">User Auth Overhaul</span>
+</div>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-semibold text-primary uppercase tracking-wider">Story Points</label>
+<input class="w-20 px-3 py-1.5 rounded bg-background-dark/50 border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary text-sm text-text-main font-mono text-center" type="number" value="5"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-semibold text-primary uppercase tracking-wider">Labels</label>
+<div class="flex gap-2">
+<span class="px-2.5 py-1 rounded bg-primary/10 border border-primary/20 text-primary text-xs font-mono">frontend</span>
+<span class="px-2.5 py-1 rounded bg-primary/10 border border-primary/20 text-primary text-xs font-mono">security</span>
+<button class="px-2 py-1 rounded border border-dashed border-primary/30 text-primary/60 hover:text-primary hover:border-primary text-xs flex items-center transition-colors">
+<span class="material-symbols-outlined text-[14px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Rich Text Editor -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-semibold text-primary flex justify-between items-end">
+                            Description
+                            <div class="flex gap-1 bg-background-dark/50 rounded p-1 border border-primary/20">
+<button class="p-1 rounded hover:bg-primary/20 text-primary/60 hover:text-primary"><span class="material-symbols-outlined text-[16px]">format_bold</span></button>
+<button class="p-1 rounded hover:bg-primary/20 text-primary/60 hover:text-primary"><span class="material-symbols-outlined text-[16px]">format_italic</span></button>
+<div class="w-px h-4 bg-primary/20 self-center mx-1"></div>
+<button class="p-1 rounded bg-primary/20 text-primary"><span class="material-symbols-outlined text-[16px]">format_list_bulleted</span></button>
+<button class="p-1 rounded hover:bg-primary/20 text-primary/60 hover:text-primary"><span class="material-symbols-outlined text-[16px]">code</span></button>
+</div>
+</label>
+<div class="w-full min-h-[300px] p-4 rounded-lg bg-background-dark/50 border border-primary/20 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary shadow-inner-border transition-all">
+<div class="rich-text-content text-sm text-text-main leading-relaxed outline-none" contenteditable="true">
+<p class="mb-3">As a user, I want to be able to log in using my existing social accounts (Google, GitHub) so that I don't have to remember another password.</p>
+<p class="mb-2 font-semibold text-primary">Acceptance Criteria:</p>
+<ul class="list-disc pl-5 space-y-1 mb-4 text-text-muted">
+<li>Google OAuth button is present on the login screen.</li>
+<li>Clicking triggers the standard OAuth consent flow.</li>
+<li>Upon successful authentication, user session is created.</li>
+<li>If user doesn't exist, a new account is automatically provisioned.</li>
+</ul>
+<p class="mb-2 font-semibold text-primary">Technical Notes:</p>
+<div class="bg-background-dark/80 p-3 rounded border border-primary/20 font-mono text-xs text-text-muted mb-3">
+                                    Ensure redirect URIs are properly configured in GCP console for environments: dev, staging, prod.
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Floating Action Button -->
+<div class="absolute bottom-6 right-6 z-50">
+<button class="flex items-center gap-2 px-6 py-3.5 rounded-full bg-primary text-background-dark font-bold text-sm tracking-wide shadow-[0_4px_20px_rgba(68,228,126,0.3)] hover:brightness-110 hover:scale-[1.02] transition-all active:scale-95 group">
+<span class="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5">rocket_launch</span>
+                Sync to Jira
+            </button>
+</div>
+</main>
+</body></html>

@@ -1,6 +1,8 @@
-fastapi
-uvicorn
-openai-whisper
+fastapi==0.128.8
+uvicorn==0.39.0
+openai-whisper==20250625
+openai>=1.0.0
 pydantic
 python-multipart
-torch 
+python-dotenv==1.2.1
+numpy>=1.24,<2

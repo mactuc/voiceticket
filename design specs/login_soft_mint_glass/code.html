@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#44e47e",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#0a140e",
+                    },
+                    fontFamily: {
+                        "display": ["Spline Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>VoiceTicket - Login</title>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+<!-- Background Accents -->
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+<!-- Main Container -->
+<div class="w-full max-w-md z-10">
+<!-- Glassmorphic Card -->
+<div class="bg-white/5 dark:bg-emerald-950/20 backdrop-blur-xl border border-primary/20 rounded-xl shadow-2xl p-8 md:p-10 relative overflow-hidden">
+<!-- Inner Glow Effect -->
+<div class="absolute inset-0 border border-white/5 pointer-events-none rounded-xl"></div>
+<!-- Logo & Header -->
+<div class="flex flex-col items-center mb-8">
+<div class="w-14 h-14 bg-primary/20 rounded-lg flex items-center justify-center mb-4 border border-primary/30 shadow-[0_0_15px_rgba(68,228,126,0.2)]">
+<span class="material-symbols-outlined text-primary text-3xl">mic_none</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-2xl font-bold tracking-tight">VoiceTicket</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm mt-1">AI-Powered Support Ticketing</p>
+</div>
+<!-- Login Form -->
+<form action="#" class="space-y-5" onsubmit="return false;">
+<div>
+<label class="block text-slate-700 dark:text-slate-200 text-sm font-medium mb-2" for="email">Email address</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors">mail</span>
+<input class="w-full bg-slate-100 dark:bg-emerald-900/30 border border-slate-200 dark:border-emerald-800/50 rounded-lg py-3 pl-11 pr-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-emerald-700" id="email" placeholder="name@company.com" type="email"/>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<label class="block text-slate-700 dark:text-slate-200 text-sm font-medium" for="password">Password</label>
+<a class="text-xs text-primary hover:underline font-medium" href="#">Forgot?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 group-focus-within:text-primary transition-colors">lock</span>
+<input class="w-full bg-slate-100 dark:bg-emerald-900/30 border border-slate-200 dark:border-emerald-800/50 rounded-lg py-3 pl-11 pr-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-emerald-700" id="password" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<input class="w-4 h-4 rounded border-emerald-800 bg-emerald-900/30 text-primary focus:ring-primary/50" id="remember" type="checkbox"/>
+<label class="text-sm text-slate-500 dark:text-slate-400" for="remember">Remember for 30 days</label>
+</div>
+<button class="w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-3 px-4 rounded-lg shadow-[0_0_20px_rgba(68,228,126,0.25)] transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+                    Sign In
+                    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</form>
+<!-- Divider -->
+<div class="relative my-8">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-slate-200 dark:border-emerald-800/50"></div>
+</div>
+<div class="relative flex justify-center text-sm">
+<span class="px-3 bg-white/0 dark:bg-emerald-950/0 backdrop-blur-sm text-slate-500 dark:text-slate-400">Or continue with SSO</span>
+</div>
+</div>
+<!-- SSO Options -->
+<div class="space-y-3">
+<button class="w-full bg-transparent hover:bg-primary/10 text-slate-900 dark:text-slate-100 border border-primary/40 font-medium py-3 px-4 rounded-lg transition-all flex items-center justify-center gap-3">
+<svg class="w-5 h-5" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M1.58 2.86a.2.2 0 0 0-.15.28L8.74 21.6a.2.2 0 0 0 .34 0L14.7 9.42a.2.2 0 0 1 .18-.12h7.54c.15 0 .23-.19.13-.3L15.42 1.34a.2.2 0 0 0-.28 0L9.5 7.15c-.1.1-.26.1-.36 0L1.73 2.88a.2.2 0 0 0-.15-.02z" fill="#0052CC"></path>
+</svg>
+                    Login with Jira
+                </button>
+</div>
+<!-- Footer Link -->
+<p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                Don't have an account? 
+                <a class="text-primary hover:underline font-semibold" href="#">Contact Admin</a>
+</p>
+</div>
+<!-- System Status Mini Card -->
+<div class="mt-6 flex items-center justify-center gap-4 text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-emerald-700">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                System Operational
+            </div>
+<span class="text-slate-300 dark:text-emerald-900">|</span>
+<div class="flex items-center gap-1.5">
+                v2.4.0
+            </div>
+</div>
+</div>
+<!-- Background Decoration Image -->
+<div class="fixed top-0 left-0 w-full h-full -z-20 opacity-30 pointer-events-none">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 via-background-dark to-background-dark"></div>
+<div class="w-full h-full" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBMvj6aUrCOM-c_TCOmbHnhqfGzbMK1VUUfgaazbyS3PXBs-aWxkLohrWg4ZXg1AgqEl5ykhI18p7zz2MeKBo8eLNXMBGhq2MX2ulHHNZZE38gnkIdGB3NLHA782_AZCJ-J33kIu0fpUOJ9FiTXbzXxv8vrKzGVzdVV_yI36E9TokjaCqrm1TktX0J4oKexFt94mAzLoEurJKzq0dtGtn7lpivecDvqsLh-keozhotodfB9NWO6-IHEdyHe4JQJO3MbjzsnvZ_5BkmQ");'></div>
+</div>
+</body></html>
