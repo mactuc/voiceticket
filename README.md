@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# VoiceTicket
 
-## Getting Started
+Convert audio feedback and meeting recordings into structured Jira tickets using Whisper speech-to-text and Claude AI.
 
-First, run the development server:
+## Architecture
+
+| Service | Stack | Port |
+|---|---|---|
+| Frontend | Next.js 16 + Tailwind CSS | 3000 |
+| Backend | FastAPI + OpenAI Whisper | 8000 |
+
+The frontend proxies `/api/*` requests to the backend, so no CORS configuration is needed in production.
+
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- An [OpenRouter](https://openrouter.ai) API key
+
+## Running with Docker
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Clone the repo
+git clone https://github.com/mactuc/voiceticket.git
+cd voiceticket
+
+# 2. Create your .env file
+echo "OPENROUTER_API_KEY=your_key_here" > .env
+
+# 3. Build and start both services
+docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+> **First build is slow** — the backend image downloads the Whisper `base` model (~150 MB) and CPU-only PyTorch during `docker build`. Subsequent starts are instant.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running locally (dev)
 
-## Learn More
+**Backend**
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Frontend**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm install
+npm run dev
+```
 
-## Deploy on Vercel
+Open [http://localhost:3000](http://localhost:3000).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Environment variables
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variable | Required | Description |
+|---|---|---|
+| `OPENROUTER_API_KEY` | Yes | API key from openrouter.ai |
+| `BACKEND_URL` | No | Backend base URL (default: `http://127.0.0.1:8000`) |
+
+## How it works
+
+1. Record or upload audio on the Capture screen
+2. Audio is sent to the backend and transcribed by Whisper
+3. The transcription is passed to Claude (via OpenRouter) which extracts structured Jira tickets
+4. Review and edit tickets in the Blueprint view before syncing to Jira
