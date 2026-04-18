@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(echo \"Next.js PID: $!\")",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s http://localhost:8000)",
+      "Bash(npm install *)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__navigate",
+      "mcp__Claude_in_Chrome__read_page",
+      "mcp__Claude_in_Chrome__read_console_messages",
+      "mcp__Claude_in_Chrome__javascript_tool",
+      "Bash(curl -s http://localhost:8000/)",
+      "Read(//private/tmp/**)",
+      "Bash(pkill -f \"uvicorn main:app\")",
+      "Bash(lsof -ti:8000)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
+    ]
+  }
+}

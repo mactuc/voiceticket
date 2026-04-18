@@ -1,4 +1,5 @@
 import "./globals.css";
+import Providers from "./components/Providers";
 
 export const metadata = {
   title: "VoiceTicket",
@@ -13,7 +14,9 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400&family=Space+Grotesk:wght@400;600;700&family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased selection:bg-primary/30 selection:text-primary overflow-hidden min-h-screen">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -1,6 +1,8 @@
 import React from 'react';
+import { useAuth } from './AuthProvider';
 
 export default function Sidebar({ setView }) {
+  const { logout, user } = useAuth();
   return (
     <aside className="w-[280px] h-screen glass-panel border-r border-primary/10 flex flex-col justify-between py-8 px-6 z-10 shrink-0">
       <div className="flex flex-col gap-10">
@@ -41,10 +43,17 @@ export default function Sidebar({ setView }) {
             <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
           </div>
           <div className="flex flex-col">
-            <p className="text-white text-xs font-bold">Connected</p>
-            <p className="text-slate-400 text-[11px]">Acme Corp Jira</p>
+            <p className="text-white text-xs font-bold">{user?.name || 'User'}</p>
+            <p className="text-slate-400 text-[11px] truncate w-32">{user?.email}</p>
           </div>
         </div>
+        <button 
+          onClick={logout}
+          className="mt-2 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-500/20 text-red-500 hover:bg-red-500/10 font-medium transition-colors w-full"
+        >
+          <span className="material-symbols-outlined text-[18px]">logout</span>
+          <span className="text-sm">Sign Out</span>
+        </button>
       </div>
     </aside>
   );

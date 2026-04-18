@@ -1,8 +1,34 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import whisper
 import os
+import db
+import auth
+import uuid
+from pydantic import BaseModel, EmailStr
+from typing import List, Dict, Any, Optional
+
+class SessionCreate(BaseModel):
+    id: str
+    title: str
+    timestamp: str
+    durationMs: int
+    ticketCount: int
+    tickets: List[Dict[str, Any]]
+    transcription: str
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+    name: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class GoogleLoginToken(BaseModel):
+    credential: str
 
 load_dotenv()
 
@@ -90,3 +116,82 @@ async def extract_jira_tickets(transcription: str):
     except Exception as e:
         print(f"OpenRouter Error: {e}")
         return {"status": "error", "message": str(e)}
+
+@app.post("/auth/register")
+async def register(user: UserRegister):
+    existing = db.get_user_by_email(user.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    user_id = str(uuid.uuid4())
+    hashed_password = auth.get_password_hash(user.password)
+    db.create_user({
+        "id": user_id,
+        "email": user.email,
+        "password_hash": hashed_password,
+        "auth_provider": "local",
+        "name": user.name,
+        "picture": None
+    })
+    
+    token = auth.create_access_token(data={"sub": user_id})
+    return {"access_token": token, "token_type": "bearer", "user": {"id": user_id, "email": user.email, "name": user.name}}
+
+@app.post("/auth/login")
+async def login(user: UserLogin):
+    db_user = db.get_user_by_email(user.email)
+    if not db_user or db_user.get("auth_provider") != "local":
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+    
+    if not auth.verify_password(user.password, db_user["password_hash"]):
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        
+    token = auth.create_access_token(data={"sub": db_user["id"]})
+    return {"access_token": token, "token_type": "bearer", "user": {"id": db_user["id"], "email": db_user["email"], "name": db_user.get("name")}}
+
+@app.post("/auth/google")
+async def google_login(token_data: GoogleLoginToken):
+    # Verify Google token
+    idinfo = auth.verify_google_token(token_data.credential)
+    email = idinfo["email"]
+    name = idinfo.get("name")
+    picture = idinfo.get("picture")
+    
+    db_user = db.get_user_by_email(email)
+    if not db_user:
+        # Create new user
+        user_id = str(uuid.uuid4())
+        db_user = db.create_user({
+            "id": user_id,
+            "email": email,
+            "password_hash": None,
+            "auth_provider": "google",
+            "name": name,
+            "picture": picture
+        })
+    else:
+        user_id = db_user["id"]
+        
+    token = auth.create_access_token(data={"sub": user_id})
+    return {"access_token": token, "token_type": "bearer", "user": {"id": user_id, "email": email, "name": name, "picture": picture}}
+
+@app.get("/users/me")
+async def get_current_user_profile(user_id: str = Depends(auth.get_current_user)):
+    user = db.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"id": user["id"], "email": user["email"], "name": user.get("name"), "picture": user.get("picture")}
+
+@app.get("/sessions")
+async def get_all_sessions(user_id: str = Depends(auth.get_current_user)):
+    return {"sessions": db.get_sessions(user_id=user_id)}
+
+@app.post("/sessions")
+async def create_session(session: SessionCreate, user_id: str = Depends(auth.get_current_user)):
+    db.add_session(session.model_dump() if hasattr(session, 'model_dump') else session.dict(), user_id=user_id)
+    return {"status": "success"}
+
+@app.delete("/sessions")
+async def clear_all_sessions(user_id: str = Depends(auth.get_current_user)):
+    db.clear_sessions(user_id=user_id)
+    return {"status": "success"}

@@ -7,20 +7,7 @@ import CaptureView from "./components/CaptureView";
 import ProcessingView from "./components/ProcessingView";
 import BlueprintView from "./components/BlueprintView";
 import JiraSyncModal from "./components/JiraSyncModal";
-
-const SESSIONS_KEY = 'voiceticket_sessions';
-
-const loadSessions = () => {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(SESSIONS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-};
-
-const saveSessions = (sessions) => {
-  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)); } catch {}
-};
+import { useAuth } from './components/AuthProvider';
 
 export default function Home() {
   const [view, setView] = useState('dashboard');
@@ -31,11 +18,23 @@ export default function Home() {
   const audioChunksRef = useRef([]);
   const recordingStartRef = useRef(null);
   const recordingDurationRef = useRef(0);
+  const { fetchWithAuth } = useAuth();
 
-  // Load sessions from localStorage on mount
+  // Load sessions from backend on mount
   useEffect(() => {
-    setSessions(loadSessions());
-  }, []);
+    const loadSessions = async () => {
+      try {
+        const res = await fetchWithAuth('/api/sessions');
+        if (res.ok) {
+          const data = await res.json();
+          setSessions(data.sessions || []);
+        }
+      } catch (e) {
+        console.error("Failed to load sessions:", e);
+      }
+    };
+    loadSessions();
+  }, [fetchWithAuth]);
 
   const startRecording = async () => {
     try {
@@ -168,12 +167,15 @@ export default function Home() {
       transcription: transcription || '',
     };
 
-    setSessions(prev => {
-      const updated = [session, ...prev].slice(0, 50); // keep last 50
-      saveSessions(updated);
-      return updated;
-    });
-  }, []);
+    // Save to backend asynchronously, then update local state
+    fetchWithAuth('/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(session)
+    }).catch(e => console.error("Failed to save session:", e));
+
+    setSessions(prev => [session, ...prev]);
+  }, [fetchWithAuth]);
 
   const handleProcessingComplete = () => {
     setView('blueprint');
@@ -194,9 +196,13 @@ export default function Home() {
     setView('blueprint');
   };
 
-  const handleClearSessions = () => {
+  const handleClearSessions = async () => {
+    try {
+      await fetchWithAuth('/api/sessions', { method: 'DELETE' });
+    } catch(e) {
+      console.error("Failed to clear sessions:", e);
+    }
     setSessions([]);
-    saveSessions([]);
   };
 
   return (
