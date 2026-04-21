@@ -21,7 +21,7 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
         description: selectedItem.description || "",
         type: selectedItem.type || "Task",
         priority: selectedItem.priority || "Medium",
-        acceptance_criteria: selectedItem.acceptance_criteria ? selectedItem.acceptance_criteria.join("\\n") : ""
+        acceptance_criteria: selectedItem.acceptance_criteria ? selectedItem.acceptance_criteria.join("\n") : ""
       });
     } else {
       setEditForm(null);
@@ -36,7 +36,7 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
     
     // Safety check, in a real app this would strictly parse
     const acStr = currentForm.acceptance_criteria || "";
-    const ac = acStr.split("\\n").filter(a => a.trim().length > 0);
+    const ac = acStr.split("\n").filter(a => a.trim().length > 0);
     
     const theItem = getSelectedItem();
     const updatedItem = { ...theItem, ...currentForm, acceptance_criteria: ac };
@@ -222,11 +222,11 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
                       Acceptance Criteria (One per line)
                     </label>
                     <textarea 
-                      className="w-full min-h-[150px] p-4 rounded-lg bg-background-dark/50 border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary shadow-inner-edge transition-all outline-none resize-y text-sm text-slate-200 font-mono"
+                      className="w-full min-h-[150px] p-4 rounded-lg bg-background-dark/50 border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary shadow-inner-edge transition-all outline-none resize-y text-sm text-slate-200"
                       value={editForm.acceptance_criteria}
                       onChange={e => setEditForm({...editForm, acceptance_criteria: e.target.value})}
                       onBlur={handleBlur}
-                      placeholder="Given [context],\\nWhen [action],\\nThen [outcome]..."
+                      placeholder="Given [context],\nWhen [action],\nThen [outcome]..."
                     />
                   </div>
                 </div>

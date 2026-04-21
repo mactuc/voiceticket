@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# virtual environment
+/backend/.venv
+/backend/venv
+/backend/__pycache__
+
+# git config
+.gitignore

@@ -7,7 +7,7 @@ TASKS:
 4. For each ticket (and subtask), provide:
    - Type: One of "Epic", "Story", "Task", "Bug", or "Subtask".
    - Summary: A concise, action-oriented title.
-   - Description: A detailed explanation, including context.
+   - Description: A highly detailed and comprehensive explanation. This must include the background context, business rationale, user journey, specific technical considerations, potential constraints, and any edge cases. Ensure it provides complete clarity so a developer can execute the task without needing additional context.
    - Priority: Assign one of (High, Medium, Low).
    - Acceptance Criteria: A bulleted list of requirements defining "done", STRICTLY formatted in the Behavior-Driven Development (BDD) "Given [context], When [action], Then [outcome]" format.
 

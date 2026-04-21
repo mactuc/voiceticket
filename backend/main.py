@@ -52,13 +52,14 @@ async def root():
 
 @app.post("/transcribe")
 async def transcribe_audio(file: UploadFile = File(...)):
-    # Save temporary audio file
-    temp_filename = f"temp_{file.filename}"
+    # Save temporary audio file safely using a UUID
+    safe_filename = "".join(c for c in (file.filename or "audio.wav") if c.isalnum() or c in "._-")
+    temp_filename = f"temp_{uuid.uuid4().hex}_{safe_filename}"
     with open(temp_filename, "wb") as buffer:
         buffer.write(await file.read())
     
     # Transcribe using Whisper
-    result = model.transcribe(temp_filename)
+    result = model.transcribe(temp_filename, fp16=False)
     
     # Cleanup
     os.remove(temp_filename)
