@@ -8,6 +8,7 @@ import auth
 import uuid
 from pydantic import BaseModel, EmailStr
 from typing import List, Dict, Any, Optional
+import httpx
 
 class SessionCreate(BaseModel):
     id: str
@@ -29,6 +30,14 @@ class UserLogin(BaseModel):
 
 class GoogleLoginToken(BaseModel):
     credential: str
+
+class JiraCallback(BaseModel):
+    code: str
+    redirectUri: str
+
+class JiraSyncRequest(BaseModel):
+    tickets: List[Dict[str, Any]]
+    projectKey: str = "VT"
 
 load_dotenv()
 
@@ -196,3 +205,150 @@ async def create_session(session: SessionCreate, user_id: str = Depends(auth.get
 async def clear_all_sessions(user_id: str = Depends(auth.get_current_user)):
     db.clear_sessions(user_id=user_id)
     return {"status": "success"}
+
+@app.get("/jira/auth-url")
+async def get_jira_auth_url():
+    client_id = os.getenv("JIRA_CLIENT_ID")
+    if not client_id:
+        raise HTTPException(status_code=500, detail="JIRA_CLIENT_ID not configured")
+    
+    # scope string needs offline_access for refresh tokens
+    scopes = "read:jira-work write:jira-work read:jira-user offline_access"
+    url = f"https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id={client_id}&scope={scopes}&redirect_uri=http://localhost:3000/settings&state=jira&response_type=code&prompt=consent"
+    return {"url": url}
+
+@app.post("/jira/callback")
+async def jira_callback(data: JiraCallback, user_id: str = Depends(auth.get_current_user)):
+    client_id = os.getenv("JIRA_CLIENT_ID")
+    client_secret = os.getenv("JIRA_CLIENT_SECRET")
+    
+    if not client_id or not client_secret:
+        raise HTTPException(status_code=500, detail="Jira credentials not configured")
+
+    async with httpx.AsyncClient() as client:
+        # 1. Exchange code for token
+        token_res = await client.post("https://auth.atlassian.com/oauth/token", json={
+            "grant_type": "authorization_code",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "code": data.code,
+            "redirect_uri": data.redirectUri
+        })
+        
+        if token_res.status_code != 200:
+            print("Token error:", token_res.text)
+            raise HTTPException(status_code=400, detail="Failed to exchange token")
+            
+        token_data = token_res.json()
+        access_token = token_data.get("access_token")
+        refresh_token = token_data.get("refresh_token")
+        
+        # 2. Get Cloud ID
+        resources_res = await client.get(
+            "https://api.atlassian.com/oauth/token/accessible-resources",
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
+        )
+        
+        if resources_res.status_code != 200 or not resources_res.json():
+            print("Resources error:", resources_res.text)
+            raise HTTPException(status_code=400, detail="Failed to get accessible resources")
+            
+        resources = resources_res.json()
+        cloud_id = resources[0]["id"]
+        
+        # 3. Save to DB
+        db.update_user_jira_tokens(user_id, access_token, refresh_token, cloud_id)
+        
+        return {"status": "success", "cloud_id": cloud_id}
+
+@app.post("/jira/sync")
+async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.get_current_user)):
+    user = db.get_user_by_id(user_id)
+    if not user or not user.get("jira_access_token") or not user.get("jira_cloud_id"):
+        raise HTTPException(status_code=400, detail="Jira not connected")
+        
+    access_token = user["jira_access_token"]
+    cloud_id = user["jira_cloud_id"]
+    
+    api_base = f"https://api.atlassian.com/ex/jira/{cloud_id}/rest/api/3/issue"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    synced_count = 0
+    
+    def create_adf_description(text):
+        if not text:
+            return {
+                "type": "doc",
+                "version": 1,
+                "content": []
+            }
+        return {
+            "type": "doc",
+            "version": 1,
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": text
+                        }
+                    ]
+                }
+            ]
+        }
+    
+    async with httpx.AsyncClient() as client:
+        for epic in req.tickets:
+            # Create Epic
+            epic_payload = {
+                "fields": {
+                    "project": {"key": req.projectKey},
+                    "summary": epic.get("summary", "Untitled Epic"),
+                    "description": create_adf_description(epic.get("description", "")),
+                    "issuetype": {"name": "Epic"}
+                }
+            }
+            # Need to set Epic Name field for Epics (customfield_10011 usually, but varies. Let's just create as Story if Epic fails or omit Epic Name if optional. In next-gen projects, Epic Name is not required. If it fails, fallback to Story)
+            epic_res = await client.post(api_base, headers=headers, json=epic_payload)
+            epic_key = None
+            if epic_res.status_code == 201:
+                epic_key = epic_res.json().get("key")
+                synced_count += 1
+            else:
+                # Fallback to Task if Epic requires custom fields we don't know
+                epic_payload["fields"]["issuetype"] = {"name": "Task"}
+                epic_res = await client.post(api_base, headers=headers, json=epic_payload)
+                if epic_res.status_code == 201:
+                    epic_key = epic_res.json().get("key")
+                    synced_count += 1
+                else:
+                    print("Failed to create parent item:", epic_res.text)
+                    continue
+            
+            # Create subtasks or linked stories
+            for sub in epic.get("subtasks", []):
+                sub_payload = {
+                    "fields": {
+                        "project": {"key": req.projectKey},
+                        "summary": sub.get("summary", "Untitled Subtask"),
+                        "description": create_adf_description(sub.get("description", "")),
+                        "issuetype": {"name": "Sub-task"},
+                        "parent": {"key": epic_key}
+                    }
+                }
+                sub_res = await client.post(api_base, headers=headers, json=sub_payload)
+                if sub_res.status_code == 201:
+                    synced_count += 1
+                else:
+                    # Fallback to Task
+                    sub_payload["fields"]["issuetype"] = {"name": "Task"}
+                    del sub_payload["fields"]["parent"]
+                    sub_res2 = await client.post(api_base, headers=headers, json=sub_payload)
+                    if sub_res2.status_code == 201:
+                        synced_count += 1
+                        
+    return {"status": "success", "synced_count": synced_count}

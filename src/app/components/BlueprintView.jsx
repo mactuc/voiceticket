@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function BlueprintView({ tickets, setTickets, onSync, onCancel }) {
+export default function BlueprintView({ tickets, setTickets, onSync, syncing, onCancel }) {
   const [selectedPath, setSelectedPath] = useState(tickets.length > 0 ? "0" : null);
   const [editForm, setEditForm] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -270,10 +270,24 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
         <div className="absolute bottom-6 right-6 z-50">
           <button 
             onClick={onSync}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-full bg-primary text-background-dark font-bold text-sm tracking-wide shadow-[0_4px_20px_rgba(68,228,126,0.3)] hover:brightness-110 hover:scale-[1.02] transition-all active:scale-95 group"
+            disabled={syncing}
+            className={`flex items-center gap-2 px-6 py-3.5 rounded-full font-bold text-sm tracking-wide transition-all group ${
+              syncing 
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
+                : 'bg-primary text-background-dark shadow-[0_4px_20px_rgba(68,228,126,0.3)] hover:brightness-110 hover:scale-[1.02] active:scale-95'
+            }`}
           >
-            <span className="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5">rocket_launch</span>
-            Sync to Jira
+            {syncing ? (
+              <>
+                <span className="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                Syncing...
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined text-[20px] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5">rocket_launch</span>
+                Sync to Jira
+              </>
+            )}
           </button>
         </div>
       </main>

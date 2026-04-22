@@ -7,11 +7,17 @@ import CaptureView from "./components/CaptureView";
 import ProcessingView from "./components/ProcessingView";
 import BlueprintView from "./components/BlueprintView";
 import JiraSyncModal from "./components/JiraSyncModal";
+import SettingsView from "./components/SettingsView";
+import TermsView from "./components/TermsView";
+import PrivacyView from "./components/PrivacyView";
+import SupportView from "./components/SupportView";
 import { useAuth } from './components/AuthProvider';
 
 export default function Home() {
   const [view, setView] = useState('dashboard');
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncCount, setSyncCount] = useState(0);
   const [tickets, setTickets] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [processingState, setProcessingState] = useState({
@@ -246,8 +252,28 @@ export default function Home() {
 
 
 
-  const handleSync = () => {
-    setShowSyncModal(true);
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetchWithAuth('/api/jira/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickets, projectKey: "VT" })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to sync to Jira');
+      }
+      
+      const data = await res.json();
+      setSyncCount(data.synced_count || 0);
+      setShowSyncModal(true);
+    } catch (e) {
+      alert(`Error syncing to Jira: ${e.message}`);
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleReturn = () => {
@@ -280,6 +306,10 @@ export default function Home() {
       )}
 
       {view === 'dashboard' && <DashboardView onStartCapture={() => setView('capture')} sessions={sessions} onOpenSession={handleOpenSession} onClearSessions={handleClearSessions} />}
+      {view === 'settings' && <SettingsView />}
+      {view === 'terms' && <TermsView />}
+      {view === 'privacy' && <PrivacyView />}
+      {view === 'support' && <SupportView />}
       {view === 'capture' && <CaptureView onStartCapture={startRecording} onStopCapture={stopRecording} />}
       {view === 'processing' && (
         <ProcessingView 
@@ -295,13 +325,14 @@ export default function Home() {
           tickets={tickets} 
           setTickets={setTickets} 
           onSync={handleSync}
+          syncing={syncing}
           onCancel={() => setView('dashboard')}
         />
       )}
 
       {showSyncModal && (
         <JiraSyncModal 
-          count={tickets.reduce((acc, current) => acc + 1 + (current.subtasks ? current.subtasks.length : 0), 0)} 
+          count={syncCount} 
           onReturn={handleReturn} 
         />
       )}

@@ -14,7 +14,10 @@ def init_db():
             password_hash TEXT,
             auth_provider TEXT,
             name TEXT,
-            picture TEXT
+            picture TEXT,
+            jira_access_token TEXT,
+            jira_refresh_token TEXT,
+            jira_cloud_id TEXT
         )
     ''')
     cursor.execute('''
@@ -31,6 +34,17 @@ def init_db():
         )
     ''')
     conn.commit()
+    
+    # Run migrations to add new columns if they don't exist
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN jira_access_token TEXT")
+        cursor.execute("ALTER TABLE users ADD COLUMN jira_refresh_token TEXT")
+        cursor.execute("ALTER TABLE users ADD COLUMN jira_cloud_id TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        # Columns likely already exist
+        pass
+        
     conn.close()
 
 def get_user_by_email(email: str):
@@ -55,19 +69,44 @@ def create_user(user_data: dict):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO users (id, email, password_hash, auth_provider, name, picture)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO users (id, email, password_hash, auth_provider, name, picture, jira_access_token, jira_refresh_token, jira_cloud_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         user_data['id'],
         user_data['email'],
         user_data.get('password_hash'),
         user_data['auth_provider'],
         user_data.get('name'),
-        user_data.get('picture')
+        user_data.get('picture'),
+        user_data.get('jira_access_token'),
+        user_data.get('jira_refresh_token'),
+        user_data.get('jira_cloud_id')
     ))
     conn.commit()
     conn.close()
     return user_data
+
+def update_user_jira_tokens(user_id: str, access_token: str, refresh_token: str, cloud_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE users 
+        SET jira_access_token = ?, jira_refresh_token = ?, jira_cloud_id = ?
+        WHERE id = ?
+    ''', (access_token, refresh_token, cloud_id, user_id))
+    conn.commit()
+    conn.close()
+
+def clear_user_jira_tokens(user_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE users 
+        SET jira_access_token = NULL, jira_refresh_token = NULL, jira_cloud_id = NULL
+        WHERE id = ?
+    ''', (user_id,))
+    conn.commit()
+    conn.close()
 
 def get_sessions(user_id: str):
     conn = sqlite3.connect(DB_PATH)

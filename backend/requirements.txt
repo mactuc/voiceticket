@@ -11,3 +11,4 @@ passlib[bcrypt]
 google-auth
 bcrypt
 email-validator
+httpx
