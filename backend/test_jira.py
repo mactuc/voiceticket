@@ -47,11 +47,16 @@ def test_jira_callback(mock_update_tokens, mock_get, mock_post):
     mock_post_res.json.return_value = {"access_token": "mock_access", "refresh_token": "mock_refresh"}
     mock_post.return_value = mock_post_res
     
-    # Mock accessible resources
-    mock_get_res = MagicMock()
-    mock_get_res.status_code = 200
-    mock_get_res.json.return_value = [{"id": "mock_cloud_id"}]
-    mock_get.return_value = mock_get_res
+    # Mock GET requests: [1] accessible-resources, [2] /me
+    mock_get_res_1 = MagicMock()
+    mock_get_res_1.status_code = 200
+    mock_get_res_1.json.return_value = [{"id": "mock_cloud_id"}]
+    
+    mock_get_res_2 = MagicMock()
+    mock_get_res_2.status_code = 200
+    mock_get_res_2.json.return_value = {"account_id": "mock_account_id"}
+    
+    mock_get.side_effect = [mock_get_res_1, mock_get_res_2]
     
     response = client.post("/jira/callback", json={"code": "testcode", "redirectUri": "http://localhost:3000/settings"})
     assert response.status_code == 200
@@ -60,7 +65,7 @@ def test_jira_callback(mock_update_tokens, mock_get, mock_post):
     assert data["cloud_id"] == "mock_cloud_id"
     
     # Verify DB update was called
-    mock_update_tokens.assert_called_once_with(FAKE_USER_ID, "mock_access", "mock_refresh", "mock_cloud_id")
+    mock_update_tokens.assert_called_once_with(FAKE_USER_ID, "mock_access", "mock_refresh", "mock_cloud_id", "mock_account_id")
 
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
 @patch("db.get_user_by_id")

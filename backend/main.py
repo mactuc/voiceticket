@@ -256,8 +256,21 @@ async def jira_callback(data: JiraCallback, user_id: str = Depends(auth.get_curr
         resources = resources_res.json()
         cloud_id = resources[0]["id"]
         
-        # 3. Save to DB
-        db.update_user_jira_tokens(user_id, access_token, refresh_token, cloud_id)
+        # 3. Get Account ID for Personal Data Reporting
+        me_res = await client.get(
+            "https://api.atlassian.com/me",
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
+        )
+        
+        account_id = None
+        if me_res.status_code == 200:
+            me_data = me_res.json()
+            account_id = me_data.get("account_id")
+        else:
+            print("Warning: Failed to fetch account_id for personal data reporting", me_res.text)
+        
+        # 4. Save to DB
+        db.update_user_jira_tokens(user_id, access_token, refresh_token, cloud_id, account_id)
         
         return {"status": "success", "cloud_id": cloud_id}
 
@@ -352,3 +365,47 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
                         synced_count += 1
                         
     return {"status": "success", "synced_count": synced_count}
+
+@app.post("/admin/jira/report-privacy")
+async def report_jira_privacy(user_id: str = Depends(auth.get_current_user)):
+    user = db.get_user_by_id(user_id)
+    if not user or not user.get("jira_access_token"):
+        raise HTTPException(status_code=400, detail="Jira not connected. Admin token required.")
+        
+    access_token = user["jira_access_token"]
+    account_ids = db.get_all_jira_account_ids()
+    
+    if not account_ids:
+        return {"status": "success", "message": "No Atlassian accounts to report."}
+        
+    # Formatting for Atlassian API
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+    
+    accounts_payload = []
+    for aid in account_ids:
+        accounts_payload.append({
+            "accountId": aid,
+            "updatedAt": now
+        })
+        
+    # Atlassian allows up to 90 accounts per request. 
+    # For a real app with many users, we'd need to batch this.
+    async with httpx.AsyncClient() as client:
+        # We only send the first 90 for this prototype
+        batch = accounts_payload[:90]
+        res = await client.post(
+            "https://api.atlassian.com/app/report-accounts/",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            json={"accounts": batch}
+        )
+        
+        if res.status_code != 200:
+            print("Privacy reporting failed:", res.status_code, res.text)
+            raise HTTPException(status_code=res.status_code, detail="Failed to report to Atlassian")
+            
+        return {"status": "success", "message": f"Reported {len(batch)} accounts."}
