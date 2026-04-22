@@ -1,9 +1,19 @@
-import React from 'react';
+"use client";
 
-export default function PrivacyView() {
+import React from 'react';
+import Link from 'next/link';
+
+export default function PrivacyPage() {
   return (
-    <div className="w-full h-screen overflow-y-auto flex flex-col items-center p-8 relative z-10">
-      <div className="w-full max-w-3xl">
+    <div className="w-full min-h-screen bg-background-dark text-slate-100 font-body antialiased selection:bg-primary/30 selection:text-primary p-8 flex flex-col relative z-10">
+      <div className="bg-noise-overlay"></div>
+      
+      <div className="w-full max-w-3xl mx-auto relative z-10">
+        <Link href="/" className="inline-flex items-center gap-2 text-primary hover:text-white transition-colors mb-8 font-medium">
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+          Back to Dashboard
+        </Link>
+
         <div className="mb-10 text-center">
           <h2 className="text-4xl font-display font-bold text-white mb-4 tracking-tight">Privacy Policy</h2>
           <p className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed">

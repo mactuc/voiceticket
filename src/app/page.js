@@ -5,12 +5,7 @@ import Sidebar from "./components/Sidebar";
 import DashboardView from "./components/DashboardView";
 import CaptureView from "./components/CaptureView";
 import ProcessingView from "./components/ProcessingView";
-import BlueprintView from "./components/BlueprintView";
-import JiraSyncModal from "./components/JiraSyncModal";
 import SettingsView from "./components/SettingsView";
-import TermsView from "./components/TermsView";
-import PrivacyView from "./components/PrivacyView";
-import SupportView from "./components/SupportView";
 import { useAuth } from './components/AuthProvider';
 
 export default function Home() {
@@ -307,9 +302,6 @@ export default function Home() {
 
       {view === 'dashboard' && <DashboardView onStartCapture={() => setView('capture')} sessions={sessions} onOpenSession={handleOpenSession} onClearSessions={handleClearSessions} />}
       {view === 'settings' && <SettingsView />}
-      {view === 'terms' && <TermsView />}
-      {view === 'privacy' && <PrivacyView />}
-      {view === 'support' && <SupportView />}
       {view === 'capture' && <CaptureView onStartCapture={startRecording} onStopCapture={stopRecording} />}
       {view === 'processing' && (
         <ProcessingView 
