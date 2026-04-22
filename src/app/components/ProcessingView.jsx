@@ -1,28 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
-export default function ProcessingView({ onComplete }) {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    // Simulate real network/processing by advancing progress and auto-completing
-    const interval = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return p + 2;
-      });
-    }, 150);
-
-    return () => clearInterval(interval);
-  }, []);
+export default function ProcessingView({ 
+  logs = [], 
+  progress = 0, 
+  statusText = "Transcribing audio...", 
+  description = "Analyzing audio for epics, stories, and sub-tasks.", 
+  phaseText = "Phase 1 of 3" 
+}) {
+  const logEndRef = useRef(null);
 
   useEffect(() => {
-    if (progress === 100) {
-      setTimeout(() => onComplete(), 500); // Small delay to let user see 100%
+    if (logEndRef.current) {
+      logEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [progress, onComplete]);
+  }, [logs]);
+
+  const formatLog = (text) => {
+    if (text.startsWith("> Found Epic") || text.startsWith("> Found Story") || text.startsWith("> Found Subtask") || text.startsWith("> Found Task")) {
+      const parts = text.split(": ");
+      if (parts.length >= 2) {
+        return (
+          <div>
+            <span className="text-primary font-bold">{parts[0]}:</span>
+            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20 ml-1">{parts.slice(1).join(": ")}</span>
+          </div>
+        );
+      }
+    }
+    if (text.startsWith("- Extracting AC:")) {
+      return (
+        <div className="pl-4 border-l border-primary/10 ml-1 text-slate-400">
+            {text}
+        </div>
+      );
+    }
+    return <span>{text}</span>;
+  };
 
   return (
     <div className="flex-1 flex flex-col w-full relative h-screen">
@@ -46,9 +59,9 @@ export default function ProcessingView({ onComplete }) {
         <section className="flex-1 flex flex-col justify-center items-center p-8 lg:p-16 relative">
           <div className="text-center mb-16 h-24 flex flex-col justify-end">
             <h1 className="font-display font-bold text-[32px] md:text-[40px] text-slate-100 leading-tight tracking-tight">
-              {progress < 40 ? "Transcribing audio..." : progress < 80 ? "Extracting entities..." : "Finalizing tickets..."}
+              {statusText}
             </h1>
-            <p className="text-slate-400 font-body text-[15px] mt-2 h-6">Analyzing audio for epics, stories, and sub-tasks.</p>
+            <p className="text-slate-400 font-body text-[15px] mt-2 h-6">{description}</p>
           </div>
 
           {/* Pipeline Visualization */}
@@ -78,9 +91,9 @@ export default function ProcessingView({ onComplete }) {
           <div className="mt-16 w-full max-w-md flex flex-col gap-2">
             <div className="flex justify-between items-end mb-1">
               <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                {progress < 40 ? "Phase 1 of 3" : progress < 80 ? "Phase 2 of 3" : "Phase 3 of 3"}
+                {phaseText}
               </span>
-              <span className="text-2xl font-bold text-primary">{progress}%</span>
+              <span className="text-2xl font-bold text-primary">{Math.round(progress)}%</span>
             </div>
             <div className="w-full h-2.5 bg-primary/10 rounded-full overflow-hidden border border-primary/5">
               <div className="h-full bg-gradient-to-r from-primary/60 to-primary rounded-full transition-all duration-300 relative" style={{width: `${progress}%`}}>
@@ -104,50 +117,23 @@ export default function ProcessingView({ onComplete }) {
             </div>
           </div>
           
-          <div className="flex-1 p-6 font-mono text-[12px] leading-relaxed overflow-y-auto flex flex-col justify-end">
-            <div className="space-y-3 w-full">
-              {progress > 5 && (
-                <div className="animate-fade-in-up flex gap-3 text-slate-500">
-                  <span className="opacity-50">[00:01:23]</span>
-                  <span>&gt; Initializing audio parser...</span>
-                </div>
-              )}
-              {progress > 15 && (
-                <div className="animate-fade-in-up flex gap-3 text-slate-500">
-                  <span className="opacity-50">[00:01:24]</span>
-                  <span>&gt; Transcribing context...</span>
-                </div>
-              )}
-              {progress > 30 && (
-                <div className="animate-fade-in-up flex gap-3 text-slate-200">
-                  <span className="text-slate-500 opacity-50">[00:01:26]</span>
-                  <div>
-                    <span className="text-primary font-bold">&gt; Found Epic:</span> <span className="bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20 ml-1">Authentication Overhaul</span>
+          <div className="flex-1 p-6 font-mono text-[12px] leading-relaxed overflow-y-hidden flex flex-col justify-end relative h-full">
+            <div className="absolute inset-x-6 bottom-6 top-6 overflow-y-auto flex flex-col flex-1 pb-4 no-scrollbar">
+              <div className="mt-auto flex flex-col justify-end min-h-full">
+                {logs.map((log, i) => (
+                  <div key={i} className="animate-fade-in-up flex gap-3 text-slate-200 mb-3">
+                    <span className="text-slate-500 opacity-50 shrink-0">[{log.time}]</span>
+                    <div className="flex-1">{formatLog(log.text)}</div>
                   </div>
-                </div>
-              )}
-              {progress > 50 && (
-                <div className="animate-fade-in-up flex gap-3 text-slate-200">
-                  <span className="text-slate-500 opacity-50">[00:01:27]</span>
-                  <div>
-                    <span className="text-primary font-bold">&gt; Found Story:</span> <span className="bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20 ml-1">Social Login via Google</span>
+                ))}
+                {progress < 100 && (
+                  <div className="animate-fade-in-up flex gap-3 text-slate-200 mt-4">
+                    <span className="text-slate-500 opacity-50 shrink-0">[{new Date().toTimeString().split(" ")[0]}]</span>
+                    <span>&gt; Processing...<span className="bg-primary w-2 h-3 inline-block ml-1 align-middle" style={{animation: 'blink 1s step-end infinite'}}></span></span>
                   </div>
-                </div>
-              )}
-              {progress > 60 && (
-                <div className="animate-fade-in-up flex gap-3 text-slate-200">
-                  <span className="text-slate-500 opacity-50">[00:01:27]</span>
-                  <div className="pl-4 border-l border-primary/10 ml-1 text-slate-400">
-                      - Extracting AC: Must support One Tap
-                  </div>
-                </div>
-              )}
-              {progress > 80 && (
-                <div className="animate-fade-in-up flex gap-3 text-slate-200 mt-4">
-                  <span className="text-slate-500 opacity-50">[00:01:30]</span>
-                  <span>&gt; Continuing extraction<span className="bg-primary w-2 h-3 inline-block ml-1 align-middle" style={{animation: 'blink 1s step-end infinite'}}></span></span>
-                </div>
-              )}
+                )}
+                <div ref={logEndRef} className="h-6" />
+              </div>
             </div>
           </div>
           <div className="absolute top-[57px] left-0 right-0 h-12 bg-gradient-to-b from-background-dark to-transparent pointer-events-none opacity-50"></div>

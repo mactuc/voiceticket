@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 export default function BlueprintView({ tickets, setTickets, onSync, onCancel }) {
   const [selectedPath, setSelectedPath] = useState(tickets.length > 0 ? "0" : null);
   const [editForm, setEditForm] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const getSelectedItem = () => {
     if (!selectedPath) return null;
@@ -15,6 +16,7 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
   const selectedItem = getSelectedItem();
 
   useEffect(() => {
+    setIsEditing(false);
     if (selectedItem) {
       setEditForm({
         summary: selectedItem.summary || "",
@@ -55,8 +57,23 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
     setTickets(newTickets);
   };
 
-  // Auto-save on blur or explicitly
-  const handleBlur = () => { saveEdit(); };
+  const handleSave = () => {
+    saveEdit();
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    if (selectedItem) {
+      setEditForm({
+        summary: selectedItem.summary || "",
+        description: selectedItem.description || "",
+        type: selectedItem.type || "Task",
+        priority: selectedItem.priority || "Medium",
+        acceptance_criteria: selectedItem.acceptance_criteria ? selectedItem.acceptance_criteria.join("\n") : ""
+      });
+    }
+    setIsEditing(false);
+  };
 
   const getIcon = (type) => {
     switch (type?.toLowerCase()) {
@@ -145,10 +162,26 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
             <>
               <div className="p-4 border-b border-primary/10 shrink-0 flex justify-between items-center bg-background-dark/80 backdrop-blur sticky top-0 z-10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/10 text-primary border border-primary/20">
-                    <span className="material-symbols-outlined text-[14px]">edit_square</span>
-                    <span className="text-xs font-semibold tracking-wide uppercase">Item Editor</span>
-                  </div>
+                  {!isEditing ? (
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">edit_square</span>
+                      <span className="text-xs font-semibold tracking-wide uppercase">Item Editor</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <button onClick={handleSave} className="flex items-center gap-1.5 px-3 py-1 bg-primary text-background-dark text-xs font-bold rounded hover:brightness-110 transition-all uppercase tracking-wide">
+                        <span className="material-symbols-outlined text-[14px]">save</span>
+                        Save
+                      </button>
+                      <button onClick={handleCancel} className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary border border-primary/20 text-xs font-bold rounded hover:bg-primary/20 transition-all uppercase tracking-wide">
+                        <span className="material-symbols-outlined text-[14px]">cancel</span>
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -157,11 +190,11 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
                   {/* Title Input */}
                   <div>
                     <input 
-                      className="w-full bg-transparent border-b border-primary/20 hover:border-primary/40 focus:border-primary focus:ring-0 px-0 py-2 text-3xl font-bold text-white outline-none transition-colors" 
+                      readOnly={!isEditing}
+                      className={`w-full bg-transparent border-b ${isEditing ? 'border-primary/20 hover:border-primary/40 focus:border-primary cursor-text' : 'border-transparent cursor-default'} focus:ring-0 px-0 py-2 text-3xl font-bold text-white outline-none transition-colors`} 
                       placeholder="Ticket Title..." 
                       value={editForm.summary}
                       onChange={e => setEditForm({...editForm, summary: e.target.value})}
-                      onBlur={handleBlur}
                     />
                   </div>
                   
@@ -170,13 +203,10 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-primary uppercase tracking-wider">Type</label>
                       <select 
-                        className="bg-background-dark/50 border border-primary/20 rounded px-3 py-1.5 text-sm outline-none focus:border-primary"
+                        disabled={!isEditing}
+                        className={`bg-background-dark/50 border ${isEditing ? 'border-primary/20 focus:border-primary' : 'border-transparent appearance-none'} rounded px-3 py-1.5 text-sm outline-none`}
                         value={editForm.type}
-                        onChange={e => {
-                          const newForm = {...editForm, type: e.target.value};
-                          setEditForm(newForm);
-                          saveEdit(newForm);
-                        }}
+                        onChange={e => setEditForm({...editForm, type: e.target.value})}
                       >
                         <option value="Epic">Epic</option>
                         <option value="Story">Story</option>
@@ -187,13 +217,10 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
                     <div className="flex flex-col gap-1.5">
                       <label className="text-xs font-semibold text-primary uppercase tracking-wider">Priority</label>
                       <select 
-                        className="bg-background-dark/50 border border-primary/20 rounded px-3 py-1.5 text-sm outline-none focus:border-primary"
+                        disabled={!isEditing}
+                        className={`bg-background-dark/50 border ${isEditing ? 'border-primary/20 focus:border-primary' : 'border-transparent appearance-none'} rounded px-3 py-1.5 text-sm outline-none`}
                         value={editForm.priority}
-                        onChange={e => {
-                          const newForm = {...editForm, priority: e.target.value};
-                          setEditForm(newForm);
-                          saveEdit(newForm);
-                        }}
+                        onChange={e => setEditForm({...editForm, priority: e.target.value})}
                       >
                         <option value="High">High</option>
                         <option value="Medium">Medium</option>
@@ -208,10 +235,10 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
                       Description
                     </label>
                     <textarea 
-                      className="w-full min-h-[150px] p-4 rounded-lg bg-background-dark/50 border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary shadow-inner-edge transition-all outline-none resize-y text-sm text-slate-200"
+                      readOnly={!isEditing}
+                      className={`w-full min-h-[150px] p-4 rounded-lg bg-background-dark/50 border ${isEditing ? 'border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary shadow-inner-edge resize-y' : 'border-transparent resize-none'} transition-all outline-none text-sm text-slate-200`}
                       value={editForm.description}
                       onChange={e => setEditForm({...editForm, description: e.target.value})}
-                      onBlur={handleBlur}
                       placeholder="Write description here..."
                     />
                   </div>
@@ -222,10 +249,10 @@ export default function BlueprintView({ tickets, setTickets, onSync, onCancel })
                       Acceptance Criteria (One per line)
                     </label>
                     <textarea 
-                      className="w-full min-h-[150px] p-4 rounded-lg bg-background-dark/50 border border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary shadow-inner-edge transition-all outline-none resize-y text-sm text-slate-200"
+                      readOnly={!isEditing}
+                      className={`w-full min-h-[150px] p-4 rounded-lg bg-background-dark/50 border ${isEditing ? 'border-primary/20 focus:border-primary focus:ring-1 focus:ring-primary shadow-inner-edge resize-y' : 'border-transparent resize-none'} transition-all outline-none text-sm text-slate-200`}
                       value={editForm.acceptance_criteria}
                       onChange={e => setEditForm({...editForm, acceptance_criteria: e.target.value})}
-                      onBlur={handleBlur}
                       placeholder="Given [context],\nWhen [action],\nThen [outcome]..."
                     />
                   </div>
