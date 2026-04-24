@@ -51,7 +51,8 @@ export default function SettingsView() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetchWithAuth(`/api/jira/auth-url`);
+      const redirectUri = window.location.origin + window.location.pathname;
+      const response = await fetchWithAuth(`/api/jira/auth-url?redirect_uri=${encodeURIComponent(redirectUri)}`);
       if (!response.ok) {
         throw new Error('Failed to get authorization URL');
       }

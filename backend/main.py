@@ -39,8 +39,9 @@ class JiraSyncRequest(BaseModel):
     tickets: List[Dict[str, Any]]
     projectKey: str = "VT"
 
-load_dotenv()
-
+import os
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+load_dotenv(dotenv_path=env_path)
 app = FastAPI()
 
 # Enable CORS for Next.js frontend
@@ -207,14 +208,16 @@ async def clear_all_sessions(user_id: str = Depends(auth.get_current_user)):
     return {"status": "success"}
 
 @app.get("/jira/auth-url")
-async def get_jira_auth_url():
+async def get_jira_auth_url(redirect_uri: str = "http://localhost:3000/settings"):
     client_id = os.getenv("JIRA_CLIENT_ID")
     if not client_id:
         raise HTTPException(status_code=500, detail="JIRA_CLIENT_ID not configured")
     
     # scope string needs offline_access for refresh tokens
     scopes = "read:jira-work write:jira-work read:jira-user offline_access"
-    url = f"https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id={client_id}&scope={scopes}&redirect_uri=http://localhost:3000/settings&state=jira&response_type=code&prompt=consent"
+    import urllib.parse
+    encoded_redirect = urllib.parse.quote(redirect_uri, safe='')
+    url = f"https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id={client_id}&scope={scopes}&redirect_uri={encoded_redirect}&state=jira&response_type=code&prompt=consent"
     return {"url": url}
 
 @app.post("/jira/callback")
