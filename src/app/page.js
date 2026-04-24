@@ -6,6 +6,8 @@ import DashboardView from "./components/DashboardView";
 import CaptureView from "./components/CaptureView";
 import ProcessingView from "./components/ProcessingView";
 import SettingsView from "./components/SettingsView";
+import BlueprintView from "./components/BlueprintView";
+import JiraSyncModal from "./components/JiraSyncModal";
 import { useAuth } from './components/AuthProvider';
 
 export default function Home() {
