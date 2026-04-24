@@ -45,6 +45,11 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Security(securi
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Could not validate credentials")
+            
+        import db
+        if not db.get_user_by_id(user_id):
+            raise HTTPException(status_code=401, detail="User account no longer exists in database")
+            
         return user_id
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Could not validate credentials")
