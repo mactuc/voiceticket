@@ -205,7 +205,7 @@ export default function SettingsView() {
               
               {/* Project Key Configuration */}
               <div className="mt-2 pt-4 border-t border-slate-700/50 flex flex-col gap-2">
-                <label className="text-sm font-medium text-slate-300">Default Jira Project</label>
+                <label className="text-sm font-medium text-slate-300">Target Space</label>
                 <div className="flex items-center gap-3">
                   {!isConnected ? (
                     <span className="text-sm text-slate-500 italic">Connect to Jira to select a project.</span>
@@ -245,7 +245,7 @@ export default function SettingsView() {
                     />
                   )}
                   {isConnected && !projectsLoading && (
-                    <span className="text-xs text-slate-500">Tickets will be created in this project.</span>
+                    <span className="text-xs text-slate-500">Tickets will be created in this space.</span>
                   )}
                 </div>
               </div>
