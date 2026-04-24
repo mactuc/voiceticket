@@ -277,6 +277,17 @@ async def jira_callback(data: JiraCallback, user_id: str = Depends(auth.get_curr
         
         return {"status": "success", "cloud_id": cloud_id}
 
+@app.get("/jira/status")
+async def get_jira_status(user_id: str = Depends(auth.get_current_user)):
+    user = db.get_user_by_id(user_id)
+    is_connected = bool(user and user.get("jira_access_token"))
+    return {"is_connected": is_connected}
+
+@app.delete("/jira/connection")
+async def disconnect_jira(user_id: str = Depends(auth.get_current_user)):
+    db.clear_user_jira_tokens(user_id)
+    return {"status": "success"}
+
 @app.post("/jira/sync")
 async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.get_current_user)):
     user = db.get_user_by_id(user_id)

@@ -6,6 +6,26 @@ export default function SettingsView() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(true);
+
+  // Fetch Jira connection status on mount
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const response = await fetchWithAuth('/api/jira/status');
+        if (response.ok) {
+          const data = await response.json();
+          setIsConnected(data.is_connected);
+        }
+      } catch (err) {
+        console.error("Failed to fetch Jira status", err);
+      } finally {
+        setStatusLoading(false);
+      }
+    };
+    fetchStatus();
+  }, [fetchWithAuth]);
 
   // Check if we just returned from OAuth flow
   useEffect(() => {
@@ -15,8 +35,6 @@ export default function SettingsView() {
 
     if (code && state === 'jira') {
       handleJiraCallback(code);
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
@@ -39,7 +57,9 @@ export default function SettingsView() {
       }
 
       setSuccess('Successfully connected to Jira!');
-      // In a real app we might want to refresh user data here
+      setIsConnected(true);
+      // Clean up URL
+      window.history.replaceState({}, document.title, window.location.pathname);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -62,6 +82,26 @@ export default function SettingsView() {
       window.location.href = data.url;
     } catch (err) {
       setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnectJira = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const response = await fetchWithAuth(`/api/jira/connection`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to disconnect Jira');
+      }
+      setIsConnected(false);
+      setSuccess('Successfully disconnected from Jira.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -110,17 +150,33 @@ export default function SettingsView() {
                 </div>
               </div>
               
-              <button
-                onClick={handleConnectJira}
-                disabled={loading}
-                className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
-                  loading 
-                    ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-                    : 'bg-primary text-background-dark hover:bg-primary-light hover:shadow-lg hover:shadow-primary/20'
-                }`}
-              >
-                {loading ? 'Connecting...' : 'Connect to Jira'}
-              </button>
+              {!statusLoading && (
+                isConnected ? (
+                  <button
+                    onClick={handleDisconnectJira}
+                    disabled={loading}
+                    className={`px-5 py-2.5 rounded-xl font-medium transition-all border ${
+                      loading 
+                        ? 'border-slate-700 text-slate-500 cursor-not-allowed' 
+                        : 'border-red-500/50 text-red-400 hover:bg-red-500/10 hover:border-red-500'
+                    }`}
+                  >
+                    {loading ? 'Disconnecting...' : 'Disconnect'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleConnectJira}
+                    disabled={loading}
+                    className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
+                      loading 
+                        ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
+                        : 'bg-primary text-background-dark hover:bg-primary-light hover:shadow-lg hover:shadow-primary/20'
+                    }`}
+                  >
+                    {loading ? 'Connecting...' : 'Connect to Jira'}
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>
