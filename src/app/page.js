@@ -59,6 +59,12 @@ export default function Home() {
       }
     };
     loadSessions();
+
+    // Handle Jira OAuth redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('code') && urlParams.get('state') === 'jira') {
+      setView('settings');
+    }
   }, [fetchWithAuth]);
 
   const startRecording = async () => {
