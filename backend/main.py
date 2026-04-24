@@ -93,12 +93,12 @@ async def extract_jira_tickets(transcription: str):
     from openai import AsyncOpenAI
     import json
     
-    client = AsyncOpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-    )
-    
     try:
+        client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
+        
         response = await client.chat.completions.create(
             model="anthropic/claude-3-haiku", # A fast model suitable for prompt parsing
             messages=[
