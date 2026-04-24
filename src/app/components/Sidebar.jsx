@@ -48,31 +48,7 @@ export default function Sidebar({ setView, currentView }) {
           </button>
         </nav>
         
-        {/* Secondary Links */}
-        <div className="flex flex-col gap-1 mt-6">
-          <h3 className="text-[10px] font-bold text-primary/50 uppercase tracking-wider px-4 mb-2">Help & Legal</h3>
-          <Link 
-            href="/support"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/10 font-medium transition-colors w-full text-left"
-          >
-            <span className="material-symbols-outlined text-[18px]">help</span>
-            <span className="text-sm">Support</span>
-          </Link>
-          <Link 
-            href="/privacy"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/10 font-medium transition-colors w-full text-left"
-          >
-            <span className="material-symbols-outlined text-[18px]">shield</span>
-            <span className="text-sm">Privacy Policy</span>
-          </Link>
-          <Link 
-            href="/terms"
-            className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/10 font-medium transition-colors w-full text-left"
-          >
-            <span className="material-symbols-outlined text-[18px]">gavel</span>
-            <span className="text-sm">Terms of Service</span>
-          </Link>
-        </div>
+
       </div>
       {/* Integration Status Widget */}
       <div className="flex flex-col gap-1 mt-auto">

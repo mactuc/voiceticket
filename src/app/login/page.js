@@ -66,7 +66,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background-dark text-slate-100 flex items-center justify-center relative overflow-hidden font-body">
+    <div className="h-full bg-background-dark text-slate-100 flex items-center justify-center relative overflow-hidden font-body">
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full bg-noise-overlay opacity-30 mix-blend-overlay z-0" />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px] z-0 pointer-events-none" />

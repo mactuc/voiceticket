@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function TermsPage() {
   return (
-    <div className="w-full min-h-screen bg-background-dark text-slate-100 font-body antialiased selection:bg-primary/30 selection:text-primary p-8 flex flex-col relative z-10">
+    <div className="w-full h-full bg-background-dark text-slate-100 font-body antialiased selection:bg-primary/30 selection:text-primary p-8 flex flex-col relative z-10">
       <div className="bg-noise-overlay"></div>
       
       <div className="w-full max-w-3xl mx-auto relative z-10">

@@ -304,7 +304,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex bg-background-dark min-h-screen text-slate-100 font-body antialiased overflow-hidden selection:bg-primary/30 selection:text-primary">
+    <div className="flex bg-background-dark h-full text-slate-100 font-body antialiased overflow-hidden selection:bg-primary/30 selection:text-primary">
       {/* Decorative Background */}
       <div className="bg-noise-overlay"></div>
 
