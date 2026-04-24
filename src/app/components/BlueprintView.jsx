@@ -98,7 +98,7 @@ export default function BlueprintView({ tickets, setTickets, onSync, syncing, on
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full glass-card">
             <div className="size-2 rounded-full bg-primary animate-pulse shadow-glow-active"></div>
-            <span className="text-xs text-text-muted font-mono">Parsed: {tickets.length} Items</span>
+            <span className="text-xs text-text-muted font-mono">Parsed: {tickets.reduce((acc, t) => acc + 1 + (t.subtasks ? t.subtasks.length : 0), 0)} Items</span>
           </div>
           <button onClick={onCancel} className="text-text-muted hover:text-white transition-colors p-2 rounded-md hover:bg-primary/10">
             <span className="material-symbols-outlined text-xl">close</span>
