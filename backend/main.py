@@ -288,6 +288,37 @@ async def disconnect_jira(user_id: str = Depends(auth.get_current_user)):
     db.clear_user_jira_tokens(user_id)
     return {"status": "success"}
 
+@app.get("/jira/projects")
+async def get_jira_projects(user_id: str = Depends(auth.get_current_user)):
+    user = db.get_user_by_id(user_id)
+    if not user or not user.get("jira_access_token") or not user.get("jira_cloud_id"):
+        raise HTTPException(status_code=400, detail="Jira not connected")
+        
+    access_token = user["jira_access_token"]
+    cloud_id = user["jira_cloud_id"]
+    
+    api_base = f"https://api.atlassian.com/ex/jira/{cloud_id}/rest/api/3/project"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Accept": "application/json"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        # Pre-flight check to test if token is expired
+        test_res = await client.get(f"https://api.atlassian.com/ex/jira/{cloud_id}/rest/api/3/myself", headers=headers)
+        if test_res.status_code == 401 and user.get("jira_refresh_token"):
+            new_access = await refresh_jira_token(user_id, user["jira_refresh_token"])
+            if new_access:
+                headers["Authorization"] = f"Bearer {new_access}"
+            else:
+                raise HTTPException(status_code=401, detail="Jira session expired. Please reconnect.")
+        
+        res = await client.get(api_base, headers=headers)
+        if res.status_code == 200:
+            return {"status": "success", "projects": res.json()}
+        else:
+            raise HTTPException(status_code=res.status_code, detail="Failed to fetch projects")
+
 async def refresh_jira_token(user_id: str, refresh_token: str):
     client_id = os.getenv("JIRA_CLIENT_ID")
     client_secret = os.getenv("JIRA_CLIENT_SECRET")
@@ -340,6 +371,7 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
                 raise HTTPException(status_code=401, detail="Jira session expired. Please reconnect.")
                 
     synced_count = 0
+    generated_keys = []
     
     def create_adf_description(text):
         if not text:
@@ -366,13 +398,14 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
     
     async with httpx.AsyncClient() as client:
         for epic in req.tickets:
-            # Create Epic
+            issue_type = epic.get("type", "Story")
+            # Create Parent
             epic_payload = {
                 "fields": {
                     "project": {"key": req.projectKey},
-                    "summary": epic.get("summary", "Untitled Epic"),
+                    "summary": epic.get("summary", "Untitled Item"),
                     "description": create_adf_description(epic.get("description", "")),
-                    "issuetype": {"name": "Epic"}
+                    "issuetype": {"name": issue_type}
                 }
             }
             # Need to set Epic Name field for Epics (customfield_10011 usually, but varies. Let's just create as Story if Epic fails or omit Epic Name if optional. In next-gen projects, Epic Name is not required. If it fails, fallback to Story)
@@ -381,40 +414,54 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
             if epic_res.status_code == 201:
                 epic_key = epic_res.json().get("key")
                 synced_count += 1
+                if epic_key:
+                    generated_keys.append(epic_key)
             else:
-                # Fallback to Task if Epic requires custom fields we don't know
-                epic_payload["fields"]["issuetype"] = {"name": "Task"}
+                # Fallback to Story if it requires custom fields we don't know
+                epic_payload["fields"]["issuetype"] = {"name": "Story"}
                 epic_res = await client.post(api_base, headers=headers, json=epic_payload)
                 if epic_res.status_code == 201:
                     epic_key = epic_res.json().get("key")
                     synced_count += 1
+                    if epic_key:
+                        generated_keys.append(epic_key)
                 else:
                     print("Failed to create parent item:", epic_res.text)
                     continue
             
             # Create subtasks or linked stories
             for sub in epic.get("subtasks", []):
+                sub_type = sub.get("type", "Sub-task")
+                if sub_type == "Subtask":
+                    sub_type = "Sub-task"
                 sub_payload = {
                     "fields": {
                         "project": {"key": req.projectKey},
                         "summary": sub.get("summary", "Untitled Subtask"),
                         "description": create_adf_description(sub.get("description", "")),
-                        "issuetype": {"name": "Sub-task"},
+                        "issuetype": {"name": sub_type},
                         "parent": {"key": epic_key}
                     }
                 }
                 sub_res = await client.post(api_base, headers=headers, json=sub_payload)
                 if sub_res.status_code == 201:
                     synced_count += 1
+                    sub_key = sub_res.json().get("key")
+                    if sub_key:
+                        generated_keys.append(sub_key)
                 else:
                     # Fallback to Task
                     sub_payload["fields"]["issuetype"] = {"name": "Task"}
-                    del sub_payload["fields"]["parent"]
+                    if "parent" in sub_payload["fields"]:
+                        del sub_payload["fields"]["parent"]
                     sub_res2 = await client.post(api_base, headers=headers, json=sub_payload)
                     if sub_res2.status_code == 201:
                         synced_count += 1
+                        sub_key = sub_res2.json().get("key")
+                        if sub_key:
+                            generated_keys.append(sub_key)
                         
-    return {"status": "success", "synced_count": synced_count}
+    return {"status": "success", "synced_count": synced_count, "generated_keys": generated_keys}
 
 @app.post("/admin/jira/report-privacy")
 async def report_jira_privacy(user_id: str = Depends(auth.get_current_user)):

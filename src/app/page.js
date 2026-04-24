@@ -255,13 +255,16 @@ export default function Home() {
 
 
 
+  const [generatedKeys, setGeneratedKeys] = useState([]);
+
   const handleSync = async () => {
     setSyncing(true);
     try {
+      const projectKey = localStorage.getItem('jiraProjectKey') || 'VT';
       const res = await fetchWithAuth('/api/jira/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tickets, projectKey: "VT" })
+        body: JSON.stringify({ tickets, projectKey: projectKey.toUpperCase() })
       });
       
       if (!res.ok) {
@@ -271,6 +274,7 @@ export default function Home() {
       
       const data = await res.json();
       setSyncCount(data.synced_count || 0);
+      setGeneratedKeys(data.generated_keys || []);
       setShowSyncModal(true);
     } catch (e) {
       alert(`Error syncing to Jira: ${e.message}`);
@@ -333,6 +337,7 @@ export default function Home() {
       {showSyncModal && (
         <JiraSyncModal 
           count={syncCount} 
+          keys={generatedKeys}
           onReturn={handleReturn} 
         />
       )}

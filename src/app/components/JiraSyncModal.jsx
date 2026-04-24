@@ -33,21 +33,25 @@ export default function JiraSyncModal({ count, onReturn }) {
           <div className="w-full bg-black/20 rounded-lg p-6 mb-8 border border-primary/10">
             <div className="text-[11px] font-bold text-slate-500 mb-4 uppercase tracking-[0.2em] text-left opacity-70">Generated Issues</div>
             <div className="flex flex-wrap gap-3 justify-center">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 glass-panel hover:bg-primary/10 border border-primary/20 rounded-md transition-all">
-                  <span className="material-symbols-outlined text-[16px] text-primary/80">bolt</span>
-                  <span className="font-mono text-[13px] text-primary font-medium">AUTH-100</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 glass-panel hover:bg-primary/10 border border-primary/20 rounded-md transition-all">
-                  <span className="material-symbols-outlined text-[16px] text-primary/80">link</span>
-                  <span className="font-mono text-[13px] text-primary font-medium">AUTH-101</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 glass-panel hover:bg-primary/10 border border-primary/20 rounded-md transition-all">
-                  <span className="material-symbols-outlined text-[16px] text-primary/80">task</span>
-                  <span className="font-mono text-[13px] text-primary font-medium">AUTH-102</span>
-              </span>
-              <div className="inline-flex items-center px-3 py-1.5 text-slate-500 font-mono text-[13px] italic">
-                  + {Math.max(0, count - 3)} more
-              </div>
+              {keys && keys.length > 0 ? (
+                <>
+                  {keys.slice(0, 5).map((key, index) => (
+                    <span key={index} className="inline-flex items-center gap-1.5 px-3 py-1.5 glass-panel hover:bg-primary/10 border border-primary/20 rounded-md transition-all">
+                        <span className="material-symbols-outlined text-[16px] text-primary/80">
+                          {index === 0 ? 'bolt' : index === 1 ? 'link' : 'task'}
+                        </span>
+                        <span className="font-mono text-[13px] text-primary font-medium">{key}</span>
+                    </span>
+                  ))}
+                  {keys.length > 5 && (
+                    <div className="inline-flex items-center px-3 py-1.5 text-slate-500 font-mono text-[13px] italic">
+                        + {keys.length - 5} more
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-slate-500 text-sm italic">No issue keys returned</div>
+              )}
             </div>
           </div>
           
