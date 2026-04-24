@@ -22,7 +22,7 @@ To ensure Jira connections and user data persist across Cloud Run instances, we 
 1. Navigate to **[Cloud SQL](https://console.cloud.google.com/sql/instances)** in your Google Cloud Console.
 2. Click **CREATE INSTANCE** and choose **PostgreSQL**.
 3. Provide an Instance ID (e.g., `voiceticket-db`) and set a strong password for the default `postgres` user. Keep the password somewhere safe.
-4. Choose the region that matches your Cloud Run deployment (e.g., `us-east1`).
+4. Choose the region that matches your Cloud Run deployment (e.g., `us-east1`). *Note: While not strictly required, keeping your database and Cloud Run service in the exact same region eliminates cross-region network egress costs and minimizes database query latency.*
 5. Choose **Cloud SQL edition**: **Enterprise** and select the **Sandbox** or **Shared core** preset to minimize costs for your prototype.
 6. Click **CREATE INSTANCE**. (This can take 5-10 minutes to provision).
 7. Once created, click into the instance and locate your **Connection name** (format: `project-id:region:instance-id`).
