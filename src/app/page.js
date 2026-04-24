@@ -305,7 +305,7 @@ export default function Home() {
       <div className="bg-noise-overlay"></div>
 
       {view !== 'blueprint' && view !== 'capture' && view !== 'processing' && (
-        <Sidebar setView={setView} />
+        <Sidebar setView={setView} currentView={view} />
       )}
 
       {view === 'dashboard' && <DashboardView onStartCapture={() => setView('capture')} sessions={sessions} onOpenSession={handleOpenSession} onClearSessions={handleClearSessions} />}

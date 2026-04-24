@@ -2,8 +2,17 @@ import React from 'react';
 import Link from 'next/link';
 import { useAuth } from './AuthProvider';
 
-export default function Sidebar({ setView }) {
+export default function Sidebar({ setView, currentView }) {
   const { logout, user } = useAuth();
+  
+  const getNavClass = (viewName) => {
+    const baseClass = "flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left transition-all border ";
+    if (currentView === viewName) {
+      return baseClass + "bg-primary/20 text-primary font-semibold border-primary/20 shadow-inner-edge";
+    }
+    return baseClass + "text-slate-400 hover:text-primary hover:bg-primary/10 font-medium border-transparent";
+  };
+
   return (
     <aside className="w-[280px] h-screen glass-panel border-r border-primary/10 flex flex-col justify-between py-8 px-6 z-10 shrink-0">
       <div className="flex flex-col gap-10">
@@ -21,7 +30,7 @@ export default function Sidebar({ setView }) {
         <nav className="flex flex-col gap-2">
           <button 
             onClick={() => setView('dashboard')} 
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/20 text-primary font-semibold border border-primary/20 transition-all shadow-inner-edge w-full text-left"
+            className={getNavClass('dashboard')}
           >
             <span className="material-symbols-outlined text-[22px]">dashboard</span>
             <span className="text-sm">Dashboard</span>
@@ -32,7 +41,7 @@ export default function Sidebar({ setView }) {
           </button>
           <button 
             onClick={() => setView('settings')}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-primary hover:bg-primary/10 font-medium transition-colors w-full text-left"
+            className={getNavClass('settings')}
           >
             <span className="material-symbols-outlined text-[22px]">settings</span>
             <span className="text-sm">Settings</span>
