@@ -84,7 +84,7 @@ export default function BlueprintView({ tickets, setTickets, onSync, syncing, on
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden relative w-full h-screen bg-background-dark text-text-main">
+    <div className="flex flex-1 overflow-hidden relative w-full h-full bg-background-dark text-text-main">
       {/* Top Navigation overlaying the split */}
       <header className="absolute top-0 left-0 right-0 flex items-center justify-between whitespace-nowrap border-b border-primary/20 bg-background-dark/80 backdrop-blur-md px-6 py-4 z-20 glass-panel h-16">
         <div className="flex items-center gap-3">

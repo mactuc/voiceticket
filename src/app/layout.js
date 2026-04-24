@@ -1,6 +1,5 @@
 import "./globals.css";
 import Providers from "./components/Providers";
-import Link from "next/link";
 
 export const metadata = {
   title: "VoiceTicket",
@@ -16,14 +15,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-body antialiased selection:bg-primary/30 selection:text-primary overflow-hidden h-screen flex flex-col bg-background-dark text-slate-100">
         <Providers>
-          <main className="flex-1 overflow-hidden relative">
-            {children}
-          </main>
-          <footer className="h-10 border-t border-primary/10 bg-background-dark/95 flex items-center justify-center gap-8 text-xs text-slate-500 z-50 shrink-0">
-            <Link href="/support" className="hover:text-primary transition-colors">Support</Link>
-            <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
-          </footer>
+          {children}
         </Providers>
       </body>
     </html>

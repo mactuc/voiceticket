@@ -38,7 +38,7 @@ export default function ProcessingView({
   };
 
   return (
-    <div className="flex-1 flex flex-col w-full relative h-screen">
+    <div className="flex-1 flex flex-col w-full relative h-full">
       {/* Header / Nav */}
       <header className="w-full flex items-center justify-between p-6 relative z-10 border-b border-primary/10 glass-panel">
         <div className="flex items-center gap-3">

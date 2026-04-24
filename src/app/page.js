@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
@@ -312,27 +313,37 @@ export default function Home() {
         <Sidebar setView={setView} currentView={view} />
       )}
 
-      {view === 'dashboard' && <DashboardView onStartCapture={() => setView('capture')} sessions={sessions} onOpenSession={handleOpenSession} onClearSessions={handleClearSessions} />}
-      {view === 'settings' && <SettingsView />}
-      {view === 'capture' && <CaptureView onStartCapture={startRecording} onStopCapture={stopRecording} />}
-      {view === 'processing' && (
-        <ProcessingView 
-          logs={processingState.logs} 
-          progress={processingState.progress} 
-          statusText={processingState.statusText} 
-          phaseText={processingState.phaseText} 
-        />
-      )}
-      
-      {view === 'blueprint' && (
-        <BlueprintView 
-          tickets={tickets} 
-          setTickets={setTickets} 
-          onSync={handleSync}
-          syncing={syncing}
-          onCancel={() => setView('dashboard')}
-        />
-      )}
+      <div className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="flex-1 relative overflow-hidden flex flex-col">
+          {view === 'dashboard' && <DashboardView onStartCapture={() => setView('capture')} sessions={sessions} onOpenSession={handleOpenSession} onClearSessions={handleClearSessions} />}
+          {view === 'settings' && <SettingsView />}
+          {view === 'capture' && <CaptureView onStartCapture={startRecording} onStopCapture={stopRecording} />}
+          {view === 'processing' && (
+            <ProcessingView 
+              logs={processingState.logs} 
+              progress={processingState.progress} 
+              statusText={processingState.statusText} 
+              phaseText={processingState.phaseText} 
+            />
+          )}
+          
+          {view === 'blueprint' && (
+            <BlueprintView 
+              tickets={tickets} 
+              setTickets={setTickets} 
+              onSync={handleSync}
+              syncing={syncing}
+              onCancel={() => setView('dashboard')}
+            />
+          )}
+        </div>
+        
+        <footer className="h-10 border-t border-primary/10 bg-background-dark/95 flex items-center justify-center gap-8 text-xs text-slate-500 shrink-0 relative z-50">
+          <Link href="/support" className="hover:text-primary transition-colors">Support</Link>
+          <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+        </footer>
+      </div>
 
       {showSyncModal && (
         <JiraSyncModal 

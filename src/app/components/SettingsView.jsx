@@ -130,7 +130,7 @@ export default function SettingsView() {
   };
 
   return (
-    <div className="w-full h-screen overflow-hidden flex flex-col items-center justify-center p-8 relative z-10">
+    <div className="w-full h-full overflow-hidden flex flex-col items-center justify-center p-8 relative z-10">
       <div className="w-full max-w-2xl">
         <div className="mb-10 text-center">
           <h2 className="text-4xl font-display font-bold text-white mb-4 tracking-tight">Settings</h2>

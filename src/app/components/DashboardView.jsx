@@ -27,7 +27,7 @@ function formatDuration(ms) {
 
 export default function DashboardView({ onStartCapture, sessions = [], onOpenSession, onClearSessions }) {
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-y-auto relative z-10 w-full">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto relative z-10 w-full">
       {/* Top Heavy Header Area */}
       <header className="w-full pt-20 pb-16 flex flex-col items-center justify-center border-b border-primary/5 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
