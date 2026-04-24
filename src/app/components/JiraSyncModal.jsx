@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function JiraSyncModal({ count, onReturn }) {
+export default function JiraSyncModal({ count, keys, onReturn }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background-dark/80 backdrop-blur-md">
       {/* Decorative Background Elements */}
