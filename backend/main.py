@@ -288,6 +288,32 @@ async def disconnect_jira(user_id: str = Depends(auth.get_current_user)):
     db.clear_user_jira_tokens(user_id)
     return {"status": "success"}
 
+async def refresh_jira_token(user_id: str, refresh_token: str):
+    client_id = os.getenv("JIRA_CLIENT_ID")
+    client_secret = os.getenv("JIRA_CLIENT_SECRET")
+    
+    if not client_id or not client_secret:
+        return None
+        
+    async with httpx.AsyncClient() as client:
+        res = await client.post("https://auth.atlassian.com/oauth/token", json={
+            "grant_type": "refresh_token",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token
+        })
+        
+        if res.status_code == 200:
+            data = res.json()
+            new_access = data.get("access_token")
+            new_refresh = data.get("refresh_token")
+            
+            # Update DB with new tokens (keep existing cloud_id and account_id)
+            user = db.get_user_by_id(user_id)
+            db.update_user_jira_tokens(user_id, new_access, new_refresh, user.get("jira_cloud_id"), user.get("jira_account_id"))
+            return new_access
+    return None
+
 @app.post("/jira/sync")
 async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.get_current_user)):
     user = db.get_user_by_id(user_id)
@@ -303,6 +329,16 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
         "Content-Type": "application/json"
     }
     
+    async with httpx.AsyncClient() as client:
+        # Pre-flight check to test if token is expired
+        test_res = await client.get(f"https://api.atlassian.com/ex/jira/{cloud_id}/rest/api/3/myself", headers=headers)
+        if test_res.status_code == 401 and user.get("jira_refresh_token"):
+            new_access = await refresh_jira_token(user_id, user["jira_refresh_token"])
+            if new_access:
+                headers["Authorization"] = f"Bearer {new_access}"
+            else:
+                raise HTTPException(status_code=401, detail="Jira session expired. Please reconnect.")
+                
     synced_count = 0
     
     def create_adf_description(text):
@@ -406,15 +442,26 @@ async def report_jira_privacy(user_id: str = Depends(auth.get_current_user)):
     # Atlassian allows up to 90 accounts per request. 
     # For a real app with many users, we'd need to batch this.
     async with httpx.AsyncClient() as client:
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
+        
+        # Test token validity
+        test_res = await client.get("https://api.atlassian.com/me", headers={"Authorization": f"Bearer {access_token}"})
+        if test_res.status_code == 401 and user.get("jira_refresh_token"):
+            new_access = await refresh_jira_token(user_id, user["jira_refresh_token"])
+            if new_access:
+                headers["Authorization"] = f"Bearer {new_access}"
+            else:
+                raise HTTPException(status_code=401, detail="Jira session expired. Please reconnect.")
+
         # We only send the first 90 for this prototype
         batch = accounts_payload[:90]
         res = await client.post(
             "https://api.atlassian.com/app/report-accounts/",
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
+            headers=headers,
             json={"accounts": batch}
         )
         
