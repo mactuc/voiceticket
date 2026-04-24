@@ -136,13 +136,22 @@ def get_all_jira_account_ids():
 
 def get_sessions(user_id: str):
     rows = execute_query('SELECT * FROM sessions WHERE user_id = ? ORDER BY timestamp DESC', (user_id,), fetch='all')
+    result = []
     for row in rows:
-        if row.get('tickets'):
+        row_dict = dict(row)
+        # PostgreSQL lowercases column names, restore camelCase for frontend
+        if 'durationms' in row_dict:
+            row_dict['durationMs'] = row_dict.pop('durationms')
+        if 'ticketcount' in row_dict:
+            row_dict['ticketCount'] = row_dict.pop('ticketcount')
+            
+        if row_dict.get('tickets'):
             try:
-                row['tickets'] = json.loads(row['tickets'])
+                row_dict['tickets'] = json.loads(row_dict['tickets'])
             except:
-                row['tickets'] = []
-    return rows
+                row_dict['tickets'] = []
+        result.append(row_dict)
+    return result
 
 def add_session(session_data: dict, user_id: str):
     execute_query('''

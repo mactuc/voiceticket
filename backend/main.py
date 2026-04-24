@@ -373,27 +373,66 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
     synced_count = 0
     generated_keys = []
     
-    def create_adf_description(text):
-        if not text:
+    def create_adf_description(text, acceptance_criteria=None):
+        content = []
+        if text:
+            content.append({
+                "type": "paragraph",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": text
+                    }
+                ]
+            })
+        
+        if acceptance_criteria:
+            content.append({
+                "type": "heading",
+                "attrs": {
+                    "level": 3
+                },
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Acceptance Criteria"
+                    }
+                ]
+            })
+            
+            list_items = []
+            for ac in acceptance_criteria:
+                list_items.append({
+                    "type": "listItem",
+                    "content": [
+                        {
+                            "type": "paragraph",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": ac
+                                }
+                            ]
+                        }
+                    ]
+                })
+                
+            content.append({
+                "type": "bulletList",
+                "content": list_items
+            })
+            
+        if not content:
             return {
                 "type": "doc",
                 "version": 1,
                 "content": []
             }
+            
         return {
             "type": "doc",
             "version": 1,
-            "content": [
-                {
-                    "type": "paragraph",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": text
-                        }
-                    ]
-                }
-            ]
+            "content": content
         }
     
     async with httpx.AsyncClient() as client:
@@ -404,7 +443,7 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
                 "fields": {
                     "project": {"key": req.projectKey},
                     "summary": epic.get("summary", "Untitled Item"),
-                    "description": create_adf_description(epic.get("description", "")),
+                    "description": create_adf_description(epic.get("description", ""), epic.get("acceptance_criteria", [])),
                     "issuetype": {"name": issue_type}
                 }
             }
@@ -438,7 +477,7 @@ async def sync_jira_tickets(req: JiraSyncRequest, user_id: str = Depends(auth.ge
                     "fields": {
                         "project": {"key": req.projectKey},
                         "summary": sub.get("summary", "Untitled Subtask"),
-                        "description": create_adf_description(sub.get("description", "")),
+                        "description": create_adf_description(sub.get("description", ""), sub.get("acceptance_criteria", [])),
                         "issuetype": {"name": sub_type},
                         "parent": {"key": epic_key}
                     }
